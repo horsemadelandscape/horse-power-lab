@@ -434,7 +434,7 @@ window.addEventListener('DOMContentLoaded',()=>{
 const T={
   ja:{
     lh:'登録中の馬',ladd:'馬を追加する',lm:'計算機を選ぶ',
-    m0n:'馬耕（畑）',m1n:'馬耕（水田）',m2n:'馬搬',m3n:'馬耕（地駄引き）',
+    m0n:'馬耕（畑）',m1n:'馬耕（水田）',m2n:'馬搬',m3n:'馬搬（地駄引き）',
     m0t:'DRY FIELD',m1t:'RICE FIELD',m2t:'LOGGING',m3t:'SKIDDING',
     m0d:'畑地耕起・砕土・播種',m1d:'水田馬耕・代かき',m2d:'丸太ログアーチ・スレッド搬出',m3d:'地面引き摺り搬出比較',
     ps:'馬と作業時間の設定',pr:'計算結果',pe:'環境レポート',
@@ -617,7 +617,23 @@ function refreshHome(){
     d.addEventListener('click',()=>selH(i));hl.appendChild(d);
   });
   const mg=document.getElementById('mgrid');mg.innerHTML='';
-  [0,1,2,3].forEach(i=>{
+  const catJa=['馬耕 — Horse Farming','馬搬 — Horse Logging'];
+  const catEn=['Horse Farming — 馬耕','Horse Logging — 馬搬'];
+  const cats=S.lang==='en'?catEn:catJa;
+  // カテゴリー0（馬耕）見出し
+  const ca=document.createElement('div');
+  ca.style.cssText='grid-column:1/-1;font-size:12px;font-weight:700;letter-spacing:1px;color:var(--text3);text-transform:uppercase;padding:2px 2px 0;margin-bottom:-2px';
+  ca.textContent=cats[0];mg.appendChild(ca);
+  [0,1].forEach(i=>{
+    const d=document.createElement('div');d.className='mcard';
+    d.innerHTML=`<div><div class="mtag" style="background:${MCOLOR[i]};color:${MTXT[i]}">${t('m'+i+'t')}</div><div class="mname">${t('m'+i+'n')}</div></div><div class="msub">${t('m'+i+'d')}</div>`;
+    d.addEventListener('click',()=>loadMod(i));mg.appendChild(d);
+  });
+  // カテゴリー1（馬搬）見出し
+  const cb=document.createElement('div');
+  cb.style.cssText='grid-column:1/-1;font-size:12px;font-weight:700;letter-spacing:1px;color:var(--text3);text-transform:uppercase;padding:6px 2px 0;margin-bottom:-2px';
+  cb.textContent=cats[1];mg.appendChild(cb);
+  [2,3].forEach(i=>{
     const d=document.createElement('div');d.className='mcard';
     d.innerHTML=`<div><div class="mtag" style="background:${MCOLOR[i]};color:${MTXT[i]}">${t('m'+i+'t')}</div><div class="mname">${t('m'+i+'n')}</div></div><div class="msub">${t('m'+i+'d')}</div>`;
     d.addEventListener('click',()=>loadMod(i));mg.appendChild(d);
@@ -1467,9 +1483,12 @@ const GUIDE_IMG={
 let _gIdx=0;
 
 function guideStart(){
-  let toured=false;
-  try{const d=JSON.parse(localStorage.getItem('hpl4')||'{}');toured=!!d.gt;}catch(e){}
-  if(toured)return;
+  const forceGuide=location.search.includes('guide');
+  if(!forceGuide){
+    let toured=false;
+    try{const d=JSON.parse(localStorage.getItem('hpl4')||'{}');toured=!!d.gt;}catch(e){}
+    if(toured)return;
+  }
   _gIdx=0;
   document.getElementById('guide-overlay').classList.add('active');
   _guideShow();
