@@ -185,6 +185,52 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px}
 
+/* GUIDE TOUR */
+#guide-overlay{position:fixed;inset:0;z-index:950;pointer-events:none}
+#guide-overlay.active{pointer-events:auto}
+.guide-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);opacity:0;transition:opacity .3s}
+#guide-overlay.active .guide-backdrop{opacity:1}
+.guide-bubble{
+  position:fixed;background:#fff;border-radius:14px;padding:14px 16px 12px;
+  box-shadow:0 8px 32px rgba(0,0,0,.22);
+  opacity:0;transform:translateY(8px);
+  transition:opacity .3s,transform .3s;
+  pointer-events:auto;
+  z-index:952;
+  --arrow-l:24px;
+}
+.guide-bubble.show{opacity:1;transform:translateY(0)}
+.guide-bubble.gb-arrow-top::before{
+  content:'';position:absolute;
+  top:-13px;left:var(--arrow-l);
+  width:0;height:0;
+  border:7px solid transparent;
+  border-bottom-color:#fff;border-top:none;
+}
+.guide-bubble.gb-arrow-bottom::before{
+  content:'';position:absolute;
+  bottom:-13px;left:var(--arrow-l);
+  width:0;height:0;
+  border:7px solid transparent;
+  border-top-color:#fff;border-bottom:none;
+}
+.gbstep{font-size:11px;color:var(--text3);font-family:var(--ffm);margin-bottom:5px;letter-spacing:.5px}
+.gbtext{font-size:14px;color:var(--text);line-height:1.65;margin-bottom:10px}
+.gbfoot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px}
+.gb-dots{display:flex;gap:4px;flex:1}
+.gb-dot{width:6px;height:6px;border-radius:50%;background:var(--bg3);transition:background .2s;flex-shrink:0}
+.gb-dot.on{background:var(--ok)}
+.gb-skip{font-size:13px;color:var(--text3);padding:4px 0;cursor:pointer;font-family:var(--ffm);white-space:nowrap;flex-shrink:0}
+.gb-skip:hover{color:var(--danger)}
+.gb-next{background:var(--text);color:#fff;border-radius:8px;padding:7px 16px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.gb-next:hover{background:var(--ok)}
+.guide-highlight{
+  position:fixed;border-radius:10px;
+  box-shadow:0 0 0 3px var(--ok),0 0 0 9999px rgba(0,0,0,.45);
+  pointer-events:none;z-index:951;
+  transition:all .3s cubic-bezier(.4,0,.2,1);
+}
+
 .sec-lbl{font-size:16px;font-weight:700;color:var(--text);margin:6px 0 5px;padding:0 2px}
 .panel > .sec-lbl:first-child{margin-top:0}
 </style>
@@ -274,11 +320,13 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
   </div>
   <div id="hbody">
     <div class="slbl" id="lh">登録中の馬</div>
-    <div id="hlist"></div>
-    <button class="add-btn" onclick="openHF()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-      <span id="ladd">馬を追加する</span>
-    </button>
+    <div id="hlist-wrap">
+      <div id="hlist"></div>
+      <button class="add-btn" onclick="openHF()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        <span id="ladd">馬を追加する</span>
+      </button>
+    </div>
     <div class="div"></div>
     <div class="slbl" id="lm">計算機を選ぶ</div>
     <div class="mgrid" id="mgrid"></div>
@@ -342,6 +390,21 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
   </div>
   <div class="dbtabs" id="dbtabs"></div>
   <div class="dbbody" id="dbbody"></div>
+</div>
+
+<!-- GUIDE TOUR -->
+<div id="guide-overlay">
+  <div class="guide-backdrop" onclick="guideSkip()"></div>
+  <div class="guide-highlight" id="guide-hl" style="display:none"></div>
+  <div class="guide-bubble" id="guide-bubble">
+    <div class="gbstep" id="gb-step"></div>
+    <div class="gbtext" id="gb-text"></div>
+    <div class="gbfoot">
+      <div class="gb-dots" id="gb-dots"></div>
+      <button class="gb-skip" onclick="guideSkip()" id="gb-skip">スキップ</button>
+      <button class="gb-next" onclick="guideNext()" id="gb-next">次へ</button>
+    </div>
+  </div>
 </div>
 
 </div>
@@ -471,6 +534,7 @@ function goToHome(){
     mis.style.display='none';
     showScr('home');
     refreshHome();
+    setTimeout(guideStart,400);
   },800);
 }
 
@@ -1304,6 +1368,212 @@ function showDBTab(i){
   document.querySelectorAll('#dbtabs .dbtab').forEach((b,j)=>b.classList.toggle('on',j===i));
 }
 function closeDB(){document.getElementById('dbov').classList.remove('op');}
+
+// ── GUIDE TOUR ────────────────────────────────────────────────
+const GUIDE={
+  ja:[
+    {
+      sel:null,
+      step:'1 / 6',
+      text:'<strong>Horse Power LAB.</strong> へようこそ！<br>農耕馬の仕事量を計算するアプリです。<br>かんたんな使い方を紹介します。'
+    },
+    {
+      sel:'#hlist-wrap',
+      arrow:'top',
+      step:'2 / 6',
+      text:'まず<strong>馬を登録</strong>しましょう。「馬を追加する」をタップして、品種・体重・年齢を入力します。登録した馬が計算の基準になります。'
+    },
+    {
+      sel:'#mgrid',
+      arrow:'bottom',
+      step:'3 / 6',
+      text:'<strong>計算機を選択</strong>します。畑の馬耕・水田の馬耕・丸太の馬搬・地駄引きの4種類があります。'
+    },
+    {
+      sel:null,
+      step:'4 / 6',
+      text:'計算機に入ると、画面上部に<strong>タブ</strong>が表示されます。「設定 → 計算結果 → 環境レポート」の順に並んでいます。<strong>左右スワイプ</strong>でも切り替えられます。',
+      img:'tab'
+    },
+    {
+      sel:null,
+      step:'5 / 6',
+      text:'タブバーの右端にある <strong>DB ボタン</strong> をタップすると、計算に使用したデータの出典・数値根拠を確認できます。',
+      img:'db'
+    },
+    {
+      sel:null,
+      step:'6 / 6',
+      text:'以上です！　疑問点はミッションページのリンクからフィードバックをお送りください。<br><br><strong>では始めましょう！</strong>'
+    },
+  ],
+  en:[
+    {
+      sel:null,
+      step:'1 / 6',
+      text:'Welcome to <strong>Horse Power LAB.</strong><br>This app calculates draft horse work output.<br>Here\'s a quick guide to get started.'
+    },
+    {
+      sel:'#hlist-wrap',
+      arrow:'top',
+      step:'2 / 6',
+      text:'First, <strong>register your horse</strong>. Tap "Add Horse" and enter breed, body weight, and age. This will be the basis for all calculations.'
+    },
+    {
+      sel:'#mgrid',
+      arrow:'bottom',
+      step:'3 / 6',
+      text:'<strong>Select a calculator</strong>: dry field tillage, paddy field, log extraction, or ground skidding.'
+    },
+    {
+      sel:null,
+      step:'4 / 6',
+      text:'Inside each calculator, <strong>tabs</strong> appear at the top: Setup → Results → Env. Report. You can also <strong>swipe left / right</strong> to switch between them.',
+      img:'tab'
+    },
+    {
+      sel:null,
+      step:'5 / 6',
+      text:'The <strong>DB button</strong> at the top right of the tab bar opens the data source overlay — showing the academic references behind every calculation.',
+      img:'db'
+    },
+    {
+      sel:null,
+      step:'6 / 6',
+      text:'That\'s it! If you have questions or field data to share, please reach out via the link on the Mission page.<br><br><strong>Let\'s get started!</strong>'
+    },
+  ]
+};
+
+// タブ・DBのミニイラスト（SVG）
+const GUIDE_IMG={
+  tab:`<div style="margin:8px 0;background:var(--bg2);border-radius:8px;padding:8px 10px;border:1px solid var(--border2)">
+    <div style="display:flex;align-items:flex-end;gap:2px;border-bottom:2px solid var(--border2);padding-bottom:0">
+      <div style="background:#fff;border:1.5px solid var(--border2);border-bottom:2px solid #fff;border-radius:6px 6px 0 0;padding:5px 12px;font-size:12px;font-weight:700;position:relative;bottom:-2px">設定</div>
+      <div style="background:transparent;border-radius:6px 6px 0 0;padding:5px 12px;font-size:12px;color:var(--text3);position:relative;bottom:-2px">計算結果</div>
+      <div style="background:transparent;border-radius:6px 6px 0 0;padding:5px 12px;font-size:12px;color:var(--text3);position:relative;bottom:-2px">環境レポート</div>
+      <div style="margin-left:auto;padding:5px 8px;font-size:12px;font-weight:700;font-family:monospace;color:var(--warn);border:none;background:none">DB</div>
+    </div>
+  </div>`,
+  db:`<div style="margin:8px 0;background:var(--bg2);border-radius:8px;padding:8px 10px;border:1px solid var(--border2)">
+    <div style="display:flex;align-items:center;gap:2px;border-bottom:2px solid var(--border2);padding-bottom:0">
+      <div style="background:transparent;border-radius:6px 6px 0 0;padding:5px 12px;font-size:12px;color:var(--text3)">設定</div>
+      <div style="background:transparent;border-radius:6px 6px 0 0;padding:5px 12px;font-size:12px;color:var(--text3)">計算結果</div>
+      <div style="margin-left:auto;background:var(--warn-bg);border:1.5px solid var(--warn-bd);border-radius:6px;padding:4px 10px;font-size:12px;font-weight:700;font-family:monospace;color:var(--warn)">▶ DB</div>
+    </div>
+  </div>`
+};
+
+let _gIdx=0;
+
+function guideStart(){
+  let toured=false;
+  try{const d=JSON.parse(localStorage.getItem('hpl4')||'{}');toured=!!d.gt;}catch(e){}
+  if(toured)return;
+  _gIdx=0;
+  document.getElementById('guide-overlay').classList.add('active');
+  _guideShow();
+}
+
+function _guideShow(){
+  const steps=GUIDE[S.lang]||GUIDE.ja;
+  const step=steps[_gIdx];
+  if(!step){guideDone();return;}
+
+  const hl=document.getElementById('guide-hl');
+  const bubble=document.getElementById('guide-bubble');
+  bubble.classList.remove('show');
+
+  // dots
+  document.getElementById('gb-dots').innerHTML=
+    steps.map((_,i)=>`<div class="gb-dot${i===_gIdx?' on':''}"></div>`).join('');
+
+  // texts + optional img
+  document.getElementById('gb-step').textContent=step.step;
+  document.getElementById('gb-text').innerHTML=
+    step.text+(step.img?GUIDE_IMG[step.img]:'');
+  document.getElementById('gb-skip').textContent=S.lang==='en'?'Skip':'スキップ';
+  const isLast=_gIdx===steps.length-1;
+  document.getElementById('gb-next').textContent=
+    isLast?(S.lang==='en'?'Start！':'はじめる！'):(S.lang==='en'?'Next →':'次へ →');
+
+  // margin & bubble size constants
+  const M=16;           // screen margin
+  const W=window.innerWidth;
+  const H=window.innerHeight;
+  const BW=Math.min(300,W-M*2);  // bubble width
+
+  // reset transforms
+  bubble.style.transform='';
+  bubble.style.left='';
+  bubble.style.right='';
+  bubble.style.top='';
+  bubble.style.bottom='';
+  bubble.style.width=BW+'px';
+
+  if(step.sel){
+    const el=document.querySelector(step.sel);
+    if(el){
+      const r=el.getBoundingClientRect();
+      const pad=8;
+      hl.style.display='block';
+      hl.style.left=(r.left-pad)+'px';
+      hl.style.top=(r.top-pad)+'px';
+      hl.style.width=(r.width+pad*2)+'px';
+      hl.style.height=(r.height+pad*2)+'px';
+
+      // arrow方向に応じて吹き出し配置
+      if(step.arrow==='top'){
+        // ハイライトの下に吹き出し
+        let top=r.bottom+pad+16;
+        let left=Math.max(M,Math.min(r.left,W-BW-M));
+        // 画面下からはみ出る場合は上に
+        if(top+200>H){top=Math.max(M,r.top-pad-220);}
+        bubble.style.top=top+'px';
+        bubble.style.left=left+'px';
+        bubble.className='guide-bubble gb-arrow-top';
+        // 矢印のleft位置をハイライト中心に合わせる
+        const arrowL=Math.max(16,Math.min((r.left+r.width/2)-left-8,BW-32));
+        bubble.style.setProperty('--arrow-l',arrowL+'px');
+      } else {
+        // ハイライトの上に吹き出し
+        let left=Math.max(M,Math.min(r.left,W-BW-M));
+        const arrowL=Math.max(16,Math.min((r.left+r.width/2)-left-8,BW-32));
+        bubble.style.setProperty('--arrow-l',arrowL+'px');
+        // まず仮配置してheightを取得
+        bubble.style.bottom=(H-r.top+pad+16)+'px';
+        bubble.style.left=left+'px';
+        bubble.className='guide-bubble gb-arrow-bottom';
+      }
+    }
+  } else {
+    // center
+    hl.style.display='none';
+    bubble.className='guide-bubble';
+    bubble.style.left=M+'px';
+    bubble.style.width=(W-M*2)+'px';
+    // 中央よりやや上
+    bubble.style.top=Math.max(M,H*0.25)+'px';
+  }
+
+  setTimeout(()=>bubble.classList.add('show'),40);
+}
+
+function guideNext(){
+  const steps=GUIDE[S.lang]||GUIDE.ja;
+  _gIdx++;
+  if(_gIdx>=steps.length)guideDone();
+  else _guideShow();
+}
+
+function guideSkip(){guideDone();}
+
+function guideDone(){
+  document.getElementById('guide-overlay').classList.remove('active');
+  document.getElementById('guide-hl').style.display='none';
+  document.getElementById('guide-bubble').classList.remove('show');
+  try{const d=JSON.parse(localStorage.getItem('hpl4')||'{}');d.gt=true;localStorage.setItem('hpl4',JSON.stringify(d));}catch(e){}
+}
 
 // BOOT
 refreshHome();
