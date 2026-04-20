@@ -45,7 +45,7 @@ input:focus,select:focus{outline:none;border-color:var(--ok);background:#fff}
 .logo{font-weight:800;font-size:17px;letter-spacing:-.3px;color:var(--text)}
 .logo span{font-size:13px;font-weight:400;color:var(--text3);margin-left:8px;letter-spacing:0}
 .nt{font-weight:700;font-size:16px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.nb{width:44px;height:44px;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;border-radius:var(--rs);color:var(--text2)}
+.nb{width:44px;height:44px;min-width:44px;min-height:44px;padding:10px;display:flex;align-items:center;justify-content:center;border-radius:var(--rs);color:var(--text2)}
 .nb:hover{background:var(--bg2)}
 .nb svg{width:18px;height:18px}
 .lt{display:flex;border:1px solid var(--border2);border-radius:20px;overflow:hidden;flex-shrink:0}
@@ -444,7 +444,7 @@ const T={
     imp:'農具・土壌の設定',area_sec:'作業面積',
     soil:'土壌タイプ',sc:'粗粒土（砂質） — 低抵抗',sm:'中粒土（ローム） — 中抵抗',sf:'細粒土（粘土・シルト） — 高抵抗',
     width:'農具幅 (cm)',fe:'圃場効率',area:'作業面積 (アール)',
-    dr:'必要牽引力',tp:'持続可能牽引力',spd:'作業速度',
+    dr:'牽引力',tp:'持続可能牽引力',spd:'作業速度',
     ahr:'毎時作業面積',aday:'1日の作業量',dneed:'必要日数',
     load:'負荷評価',workq:'仕事量',energy:'エネルギー消費（1日）',
     pwr:'瞬間出力',wday:'1日の総仕事量',
@@ -476,7 +476,7 @@ const T={
     imp:'Implement & Soil',area_sec:'Field Area',
     soil:'Soil Type',sc:'Coarse / Sandy — low resistance',sm:'Medium / Loam — moderate resistance',sf:'Fine / Clay-Silt — high resistance',
     width:'Implement Width (cm)',fe:'Field Efficiency',area:'Area (ares)',
-    dr:'Required Draft Force',tp:'Sustainable Pull',spd:'Speed',
+    dr:'Draft Force',tp:'Sustainable Pull',spd:'Speed',
     ahr:'Area / Hour',aday:'Area / Day',dneed:'Days Required',
     load:'Load Assessment',workq:'Work Output',energy:'Daily Energy Expenditure',
     pwr:'Power Output',wday:'Daily Work (MJ)',
@@ -709,7 +709,7 @@ function buildPanels(htmls,title){
     b.textContent=getPanelLabels()[S.curMod]?.[i]||['設定','結果','環境'][i]||'';
     b.addEventListener('click',()=>goP(i));dots.appendChild(b);
   });
-  resizeP();setupSwipe();showScr('calc');
+  showScr('calc');resizeP();setupSwipe();
   setTimeout(()=>{if(calcFn)calcFn();},60);
   updateHorseBadge();
 }
@@ -821,7 +821,7 @@ function fc(){
   if(tb){const impKey=v('f-impl')||'maburi';const tr=IMPL[impKey]?.trust||'C';const tc={A:'var(--ok)',B:'var(--warn)',C:'var(--danger)'};const td={A:'信頼度 A — 実測値',B:'信頼度 B — 類似実測から導出',C:'信頼度 C — トラクター規格を縮尺（実測値フィードバック求む）'};tb.innerHTML=`<div style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:8px;background:${tc[tr]}15;border:1px solid ${tc[tr]}40"><span style="color:${tc[tr]};font-weight:700;font-family:var(--ffm);font-size:12px">${td[tr]}</span></div>`;}
   const r=document.getElementById('fr');if(!r)return;
   r.innerHTML=`
-<div class="rg"><div class="met"><div class="ml">${t('dr')}</div><div class="mv">${dr.toFixed(0)}</div><div class="mu">kgf</div></div><div class="met"><div class="ml">${t('tp')}</div><div class="mv">${plo.toFixed(0)}–${phi.toFixed(0)}</div><div class="mu">kgf</div></div><div class="met"><div class="ml">${t('spd')}</div><div class="mv">${spkmh.toFixed(1)}</div><div class="mu">km/h</div></div><div class="met"><div class="ml">${t('ahr')}</div><div class="mv">${ahr.toFixed(1)}</div><div class="mu">a/h</div></div><div class="met"><div class="ml">${t('aday')}</div><div class="mv">${aday.toFixed(1)}</div><div class="mu">a/day</div></div><div class="met"><div class="ml">${t('dneed')}</div><div class="mv">${days.toFixed(1)}</div><div class="mu">日</div></div></div>
+<div class="rg"><div class="met"><div class="ml">${t('dr')}${nh>1&&(v('f-impl')||'maburi')==='maburi'?'<div style="font-size:10px;color:var(--text3)">'+(S.lang==='en'?'total ('+nh+' plows)':'合計（×'+nh+'犂）')+'</div>':''}</div><div class="mv">${dr.toFixed(0)}</div><div class="mu">kgf</div></div><div class="met"><div class="ml">${t('tp')}<div style="font-size:10px;color:var(--text3)">${S.lang==='en'?'team total':'チーム合計'}</div></div><div class="mv">${plo.toFixed(0)}–${phi.toFixed(0)}</div><div class="mu">kgf</div></div><div class="met"><div class="ml">${t('spd')}</div><div class="mv">${spkmh.toFixed(1)}</div><div class="mu">km/h</div></div><div class="met"><div class="ml">${t('ahr')}</div><div class="mv">${ahr.toFixed(1)}</div><div class="mu">a/h</div></div><div class="met"><div class="ml">${t('aday')}</div><div class="mv">${aday.toFixed(1)}</div><div class="mu">a/day</div></div><div class="met"><div class="ml">${t('dneed')}</div><div class="mv">${days.toFixed(1)}</div><div class="mu">日</div></div></div>
 ${loadBar(pct,null,'tillage')}
 <div class="sec-lbl">${t('workq')}</div><div class="rc mt8">
 <div class="dr"><span>${t('pwr')}</span><span class="dv">${(pw/1000).toFixed(2)} kW / ${(pw/745.7).toFixed(2)} hp</span></div>
@@ -1499,6 +1499,7 @@ const GUIDE_IMG={
 let _gIdx=0;
 
 function guideStart(){
+  if(S.curMod!==null)return;  // 計算機画面ではガイドを出さない
   const forceGuide=location.search.includes('guide');
   if(!forceGuide){
     let toured=false;
