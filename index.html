@@ -25,7 +25,7 @@
   --r:10px;--rs:7px;--ffm:'DM Mono',monospace;
 }
 html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,sans-serif;font-size:16px}
-button{cursor:pointer;border:none;background:none;color:inherit;font-family:inherit;font-size:inherit}
+button{cursor:pointer;border:none;background:none;color:inherit;font-family:inherit;font-size:inherit;touch-action:manipulation}
 input,select{font-family:inherit;color:var(--text);background:var(--bg2);border:1px solid var(--border2);border-radius:var(--rs);padding:8px 10px;width:100%;font-size:16px;-webkit-appearance:none;appearance:none}
 input:focus,select:focus{outline:none;border-color:var(--ok);background:#fff}
 #app{position:fixed;inset:0;display:flex;flex-direction:column}
@@ -41,11 +41,11 @@ input:focus,select:focus{outline:none;border-color:var(--ok);background:#fff}
 .scr.on{display:flex}
 
 /* NAV */
-.nav{display:flex;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border);background:#fff;gap:10px;min-height:52px;flex-shrink:0}
+.nav{display:flex;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border);background:#fff;gap:10px;min-height:52px;flex-shrink:0;position:relative;z-index:10}
 .logo{font-weight:800;font-size:17px;letter-spacing:-.3px;color:var(--text)}
 .logo span{font-size:13px;font-weight:400;color:var(--text3);margin-left:8px;letter-spacing:0}
 .nt{font-weight:700;font-size:16px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.nb{width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:var(--rs);color:var(--text2)}
+.nb{width:44px;height:44px;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;border-radius:var(--rs);color:var(--text2)}
 .nb:hover{background:var(--bg2)}
 .nb svg{width:18px;height:18px}
 .lt{display:flex;border:1px solid var(--border2);border-radius:20px;overflow:hidden;flex-shrink:0}
@@ -1016,12 +1016,12 @@ ${loadBar(pct,slp>40?'急傾斜上り搬出: ケーブルヤーダーの使用�
 //  CALC 4: 馬搬（地駄引き）
 // ═══════════════════════════════════════════════════════════════
 const GRD={
-  hard:{mb:0.80,mp:0.48,ks:150,ja:'硬い乾燥林床',en:'Hard dry forest floor'},
-  firm:{mb:0.90,mp:0.55,ks:75,ja:'普通の林床（腐葉土あり）',en:'Firm forest floor'},
-  soft:{mb:1.00,mp:0.62,ks:35,ja:'軟弱湿潤地',en:'Soft moist ground'},
-  wet:{mb:1.20,mp:0.70,ks:12,ja:'軟弱過湿地（泥濘）',en:'Soft wet / muddy'},
-  snc:{mb:0.55,mp:0.28,ks:10,ja:'圧雪路',en:'Compacted snow'},
-  snl:{mb:0.65,mp:0.42,ks:3,ja:'新雪・積雪路面',en:'Fresh snow'},
+  hard:{mb:0.55,mp:0.48,ks:150,ja:'硬い乾燥林床',en:'Hard dry forest floor'},
+  firm:{mb:0.65,mp:0.55,ks:75,ja:'普通の林床（腐葉土あり）',en:'Firm forest floor'},
+  soft:{mb:0.75,mp:0.62,ks:35,ja:'軟弱湿潤地',en:'Soft moist ground'},
+  wet:{mb:0.90,mp:0.70,ks:12,ja:'軟弱過湿地（泥濘）',en:'Soft wet / muddy'},
+  snc:{mb:0.25,mp:0.28,ks:10,ja:'圧雪路',en:'Compacted snow'},
+  snl:{mb:0.40,mp:0.42,ks:3,ja:'新雪・積雪路面',en:'Fresh snow'},
 };
 
 function gdPanels(){
@@ -1041,7 +1041,8 @@ function gdPanels(){
 </div>
 <div class="sec-lbl">${t('gndset')}</div><div class="ic">
 <div class="fld"><label>${t('gr')}</label><select id="g-gr" onchange="gc()">${grOpts}</select></div>
-<div class="fld"><label>${t('sk')} — 素引き時の先端の沈み込み</label><div class="rr"><input type="range" id="g-sk" min="0" max="20" step="1" value="5" oninput="document.getElementById('gsko').textContent=this.value+' cm';gc()"><span class="rv" id="gsko">5 cm</span></div></div>
+<div class="fld"><label>${t('dist')} — 搬出距離</label><input type="number" id="g-dist" value="50" min="5" max="500" onchange="gc()"><div style="font-size:12px;color:var(--text3);margin-top:4px;line-height:1.5">${S.lang==='en'?'One-way skidding distance (m)':'片道の搬出距離（m）。往復の仕事量を計算します。'}</div></div>
+<div class="fld"><label>${t('sk')} — 素引き時の先端の沈み込み</label><div class="rr"><input type="range" id="g-sk" min="0" max="20" step="1" value="2" oninput="document.getElementById('gsko').textContent=this.value+' cm';gc()"><span class="rv" id="gsko">5 cm</span></div></div>
 <div class="fld"><label>${t('slope')}</label><div class="rr"><input type="range" id="g-sl" min="-30" max="50" step="1" value="0" oninput="document.getElementById('gslo').textContent=(parseInt(this.value)>0?'+':'')+this.value+'%';gc()"><span class="rv" id="gslo">0%</span></div></div>
 </div>`;
   return [p0,`<div id="gr2"></div>`];
@@ -1058,7 +1059,7 @@ function gdAutoWt(){
 function gc(){
   const bw=num('g-bw',700),nh=int_('g-nh',1);
   const wt=num('g-wt',300),dia=num('g-ds',25),g=GRD[v('g-gr')||'firm'];
-  const sk=num('g-sk',5),slp=num('g-sl',0);
+  const sk=num('g-sk',2),slp=num('g-sl',0),dist=num('g-dist',50);
 
   // Derive log volume for display
   const len=num('g-len',4),ds=num('g-ds',25),dl=num('g-dl',35);
@@ -1068,7 +1069,7 @@ function gc(){
   const sr=Math.atan(slp/100),cs=Math.cos(sr),ss=Math.sin(sr);
   const Fg=wt*ss;
   const A=(dia/100)*(sk/100);
-  const Fcut=g.ks*1000*A/9.81;
+  const Fcut=0.35*g.ks*1000*A/9.81;  // 0.35=丸太バット部形状補正係数（農具刃先より鈍い）
   const db=g.mb*wt*cs+Fg+Fcut;   // bare log
   const dp=g.mp*wt*cs+Fg;         // with plate
 
@@ -1130,12 +1131,12 @@ ${lbSmall(pb,'素引き / 持続可能牽引力')}
 ${lbSmall(pp,'鉄板あり / 持続可能牽引力')}
 ${warn}
 </div>
-<div class="sec-lbl">1m引くあたりの仕事量</div><div class="rc mt8">
+<div class="sec-lbl">${S.lang==='en'?'Work & Cycle ('+dist+'m)':'仕事量・サイクル（片道'+dist+'m）'}</div><div class="rc mt8">
 <div class="rg">
-<div class="met"><div class="ml">素引き</div><div class="mv">${pw_bare.toFixed(0)}</div><div class="mu">J/m</div></div>
-<div class="met"><div class="ml">鉄板あり</div><div class="mv">${pw_plate.toFixed(0)}</div><div class="mu">J/m</div></div>
+<div class="met"><div class="ml">${S.lang==='en'?'Work/trip (bare)':'1往復（素引き）'}</div><div class="mv">${(pw_bare*dist*2/1000).toFixed(1)}</div><div class="mu">kJ</div></div>
+<div class="met"><div class="ml">${S.lang==='en'?'Work/trip (plate)':'1往復（鉄板）'}</div><div class="mv">${(pw_plate*dist*2/1000).toFixed(1)}</div><div class="mu">kJ</div></div>
 </div>
-<div style="font-size:12px;color:var(--text3);margin-top:8px;font-family:var(--ffm)">例: 100m搬出の場合 → 素引き ${(pw_bare*100/1000).toFixed(1)} kJ / 鉄板あり ${(pw_plate*100/1000).toFixed(1)} kJ</div>
+<div style="font-size:12px;color:var(--text3);margin-top:8px;font-family:var(--ffm)">${S.lang==='en'?'Per metre: bare '+pw_bare.toFixed(0)+' J/m — plate '+pw_plate.toFixed(0)+' J/m':'1mあたり：素引き '+pw_bare.toFixed(0)+' J/m｜鉄板 '+pw_plate.toFixed(0)+' J/m'}</div>
 </div>
 <div class="note mt6">Tillers Int'l (2002) TechGuide 2G-212 / Godwin & O'Dogherty (2007) Biosystems Eng.</div>`;
 }
