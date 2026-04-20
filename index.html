@@ -45,9 +45,10 @@ input:focus,select:focus{outline:none;border-color:var(--ok);background:#fff}
 .logo{font-weight:800;font-size:17px;letter-spacing:-.3px;color:var(--text)}
 .logo span{font-size:13px;font-weight:400;color:var(--text3);margin-left:8px;letter-spacing:0}
 .nt{font-weight:700;font-size:16px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.nb{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:var(--rs);color:var(--text2)}
+.nb{width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:var(--rs);color:var(--text2);-webkit-tap-highlight-color:transparent;}
 .nb:hover{background:var(--bg2)}
-.nb svg{width:18px;height:18px}
+.nb:active{background:var(--bg3)}
+.nb svg{width:20px;height:20px;pointer-events:none}
 .lt{display:flex;border:1px solid var(--border2);border-radius:20px;overflow:hidden;flex-shrink:0}
 .lb{padding:4px 11px;font-size:13px;font-family:var(--ffm);color:var(--text3);transition:all .15s}
 .lb.on{background:var(--text);color:#fff}
@@ -93,7 +94,15 @@ input:focus,select:focus{outline:none;border-color:var(--ok);background:#fff}
 .ic h3{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;color:var(--text3);margin-bottom:10px}
 .fld{margin-bottom:10px}
 .fld:last-child{margin-bottom:0}
-.fld label{display:block;font-size:14px;color:var(--text2);margin-bottom:4px;font-weight:500}
+.fld label{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--text2);margin-bottom:4px;font-weight:500}
+/* help icon */
+.help-icon{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--bg3);color:var(--text3);font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;user-select:none;-webkit-tap-highlight-color:transparent}
+.help-icon:active{background:var(--border2)}
+/* tooltip popup */
+.help-popup{display:none;position:fixed;z-index:700;max-width:calc(100vw - 40px);background:#1a1a1a;color:#f5f5f5;font-size:13px;line-height:1.6;padding:12px 14px;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.35);font-weight:400}
+.help-popup.show{display:block}
+/* horse head-count info */
+.nh-info{font-size:12px;color:var(--text3);background:var(--bg2);border-radius:var(--rs);padding:5px 9px;margin-top:5px;line-height:1.5;font-family:var(--ffm)}
 .rr{display:flex;align-items:center;gap:8px}
 .rr input[type=range]{flex:1}
 .rv{font-family:var(--ffm);font-size:14px;min-width:52px;text-align:right;color:var(--ok);font-weight:500}
@@ -337,7 +346,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 <!-- CALC -->
 <div id="s-calc" class="scr">
   <div class="nav">
-    <button class="nb" onclick="goHome()">
+    <button class="nb" onclick="goHome()" aria-label="ホームに戻る" style="margin-left:-6px">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15,18 9,12 15,6"/></svg>
     </button>
     <div class="nt" id="ctitle"></div>
@@ -392,6 +401,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
   <div class="dbbody" id="dbbody"></div>
 </div>
 
+<!-- HELP TOOLTIP -->
+<div class="help-popup" id="help-popup" onclick="closeHelp()"></div>
+
 <!-- GUIDE TOUR -->
 <div id="guide-overlay">
   <div class="guide-backdrop" onclick="guideSkip()"></div>
@@ -421,6 +433,42 @@ const IMG_DATA = "/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAA
 const S={lang:'ja',horses:[],selH:null,editH:null,curMod:null,panel:0,panels:0,tx:0,ty:0,dbTab:0};
 try{const d=JSON.parse(localStorage.getItem('hpl4')||'{}');S.horses=d.h||[];S.lang=d.l||'ja';}catch(e){}
 function save(){try{localStorage.setItem('hpl4',JSON.stringify({h:S.horses,l:S.lang}));}catch(e){}}
+
+// ── HELP TOOLTIP ──────────────────────────────────────────────
+function showHelp(e, msg){
+  e.stopPropagation();
+  const pop=document.getElementById('help-popup');
+  // Support \n line breaks
+  pop.innerHTML=msg.split('\\n').map(l=>`<div>${l}</div>`).join('');
+  pop.classList.add('show');
+  // Position near icon
+  const r=e.currentTarget.getBoundingClientRect();
+  // Need a frame for offsetWidth to be ready
+  requestAnimationFrame(()=>{
+    const popW=pop.offsetWidth||260;
+    const left=Math.max(16,Math.min(r.left,window.innerWidth-popW-16));
+    const top=r.bottom+8;
+    pop.style.top=top+'px';
+    pop.style.left=left+'px';
+  });
+  setTimeout(()=>document.addEventListener('click',closeHelp,{once:true}),10);
+}
+function showHelpKey(e, key){
+  const msg=(window._helpTexts||{})[key]||key;
+  showHelp(e, msg);
+}
+function closeHelp(){
+  document.getElementById('help-popup').classList.remove('show');
+}
+
+// ── SCROLL INPUT INTO VIEW (③ キーパッド対策) ────────────────
+document.addEventListener('focusin',e=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT'){
+    setTimeout(()=>{
+      e.target.scrollIntoView({behavior:'smooth',block:'center'});
+    },320); // iOS keyboard animates ~300ms
+  }
+});
 
 // Image via JS
 window.addEventListener('DOMContentLoaded',()=>{
@@ -540,7 +588,12 @@ function goToHome(){
 
 // ── SCREENS ────────────────────────────────────────────────────
 function showScr(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));document.getElementById('s-'+id).classList.add('on');}
-function goHome(){S.curMod=null;document.getElementById('s-mission').style.display='none';showScr('home');refreshHome();}
+function goHome(){
+  S.curMod=null;
+  document.getElementById('s-mission').style.display='none';
+  showScr('home');
+  refreshHome();
+}
 
 // ── HORSE ──────────────────────────────────────────────────────
 const BW_DEF={belgian:900,percheron:880,clydesdale:860,shire:840,hokkaido:450,kiso:380,standard:650,generic:600};
@@ -674,7 +727,11 @@ function loadBar(pct,extraWarn,mode){
   if(pct>110)warn=`<div class="dangerbox">${MSG.dg[S.lang||'ja']}</div>`;
   else if(pct>85)warn=`<div class="warnbox">${MSG['wn_'+mkey]?.[S.lang||'ja']||MSG.wn_tillage[S.lang||'ja']}</div>`;
   if(extraWarn)warn+=`<div class="warnbox mt6">${extraWarn}</div>`;
-  return `<div class="sec-lbl">${t('load')}</div><div class="rc"><div class="lsec"><div class="lhd"><span>${t('lr')}</span><span>${pct.toFixed(0)}%</span></div><div class="lbg"><div class="lbf" style="width:${Math.min(pct,100)}%;background:${c}"></div></div><span class="vd ${vc}">${vtext}</span></div>${warn}</div>`;
+  // ④ 閾値の説明（肌感覚のずれ対策）
+  const threshNote=S.lang==='ja'
+    ?'<div class="note mt6">負荷率の基準: 持続可能牽引力 = 体重の11%（10–12%の中央値）。85%以下 = 余力あり・長時間作業可、85–110% = 調整推奨、110%超 = 馬への過負荷。地面の状態・馬の体調・気温により実際の感覚と差が出ることがあります。</div>'
+    :'<div class="note mt6">Load thresholds: Sustainable pull = 11% of body weight (midpoint of 10–12%). ≤85% = reserve capacity; 85–110% = adjustment recommended; >110% = overloaded. Actual feel may vary with ground condition, horse fitness, and temperature.</div>';
+  return `<div class="sec-lbl">${t('load')}</div><div class="rc"><div class="lsec"><div class="lhd"><span>${t('lr')}</span><span>${pct.toFixed(0)}%</span></div><div class="lbg"><div class="lbf" style="width:${Math.min(pct,100)}%;background:${c}"></div></div><span class="vd ${vc}">${vtext}</span></div>${warn}${threshNote}</div>`;
 }
 
 // ── PANEL TAB LABELS ──────────────────────────────────────────
@@ -755,10 +812,21 @@ const IMPL={
 
 function farmPanels(){
   const bw=getBW();
+  const bwLbl=S.lang==='ja'?'1頭あたりの体重 (kg)':'Body Weight per Horse (kg)';
+  const nhLbl=S.lang==='ja'?'頭数 / Horses':'Number of Horses';
+  const feLbl=S.lang==='ja'?'圃場効率':'Field Efficiency';
+  const feHelp=S.lang==='ja'
+    ?'圃場効率とは、理論上の最大作業量に対して実際に作業できた割合です。\n枕地での旋回・農具の上げ下げ・一時停止などのロスを含みます。\n標準0.65 = 作業時間の65%が実質的な耕起に使われている状態。'
+    :'Field Efficiency is the ratio of actual field work to the theoretical maximum.\nIt accounts for time lost to turning at headlands, implement raises, and pauses.\n0.65 standard = 65% of working time is productive tillage.';
+  const feHelpKey='fe-help-farm';
   const impOpts=Object.entries(IMPL).map(([k,v_])=>`<option value="${k}">${S.lang==='ja'?v_.ja:v_.en}</option>`).join('');
+  // Store help text for FE, retrieve by key to avoid escaping
+  window._helpTexts=window._helpTexts||{};
+  window._helpTexts[feHelpKey]=feHelp;
   const p0=`<div class="sec-lbl">${t('ps')}</div><div class="ic">
-<div class="fld"><label>${t('bw')}</label><input type="number" id="f-bw" value="${bw}" min="200" max="1200" onchange="fc()"></div>
-<div class="fld"><label>頭数 / Horses</label><select id="f-nh" onchange="fc()"><option value="1" selected>${t('n1')}</option><option value="2">${t('n2')}</option><option value="3">${t('n3')}</option><option value="4">${t('n4')}</option></select></div>
+<div class="fld"><label>${bwLbl}</label><input type="number" id="f-bw" value="${bw}" min="200" max="1200" onchange="fc()"></div>
+<div class="fld"><label>${nhLbl}</label><select id="f-nh" onchange="fNhChange()"><option value="1" selected>${t('n1')}</option><option value="2">${t('n2')}</option><option value="3">${t('n3')}</option><option value="4">${t('n4')}</option></select>
+<div class="nh-info" id="f-nh-info"></div></div>
 <div class="fld"><label>${t('wh')}</label><div class="rr"><input type="range" id="f-wh" min="4" max="10" step="0.5" value="6" oninput="document.getElementById('fwho').textContent=this.value+' h';fc()"><span class="rv" id="fwho">6 h</span></div></div>
 </div>
 <div class="sec-lbl">${t('imp')}</div><div class="ic">
@@ -766,7 +834,7 @@ function farmPanels(){
 <div class="fld"><label>${t('soil')}</label><select id="f-soil" onchange="fc()"><option value="c">${t('sc')}</option><option value="m" selected>${t('sm')}</option><option value="f">${t('sf')}</option></select></div>
 <div class="fld"><label id="f-wlbl">${t('width')}</label><input type="number" id="f-w" value="20" min="5" max="400" onchange="fc()"></div>
 <div class="fld" id="f-wguide" style="font-size:12px;color:var(--text3);font-family:var(--ffm)"></div>
-<div class="fld"><label>${t('fe')}</label><select id="f-fe" onchange="fc()"><option value="0.50">0.50 — 劣悪/Poor</option><option value="0.65" selected>0.65 — 標準/Standard</option><option value="0.75">0.75 — 良好/Good</option></select></div>
+<div class="fld"><label>${feLbl}<span class="help-icon" onclick="showHelpKey(event,'${feHelpKey}')">?</span></label><select id="f-fe" onchange="fc()"><option value="0.50">0.50 — 劣悪/Poor</option><option value="0.65" selected>0.65 — 標準/Standard</option><option value="0.75">0.75 — 良好/Good</option></select></div>
 </div>
 <div class="sec-lbl">${t('area_sec')}</div><div class="ic">
 <div class="fld"><label>${t('area')}</label><input type="number" id="f-area" value="100" min="1" max="5000" onchange="fc()"></div>
@@ -775,7 +843,26 @@ function farmPanels(){
   return [p0,`<div id="trust-badge-farm" style="margin-bottom:6px"></div><div id="fr"></div>`,`<div class="ptitle">${t('pe')}</div><div id="fe2"></div>`];
 }
 
+// 頭数変更時に体重合計を表示
+function nhInfo(nhId,bwId,infoId){
+  const nh=int_(nhId,1),bw=num(bwId,650);
+  const el=document.getElementById(infoId);
+  if(!el)return;
+  if(nh===1){el.textContent='';return;}
+  const total=(bw*nh).toFixed(0);
+  const lo=(bw*nh*0.10).toFixed(0),hi=(bw*nh*0.12).toFixed(0);
+  const msg=S.lang==='ja'
+    ?`${nh}頭 × ${bw}kg = チーム合計 ${total}kg ／ 持続可能牽引力 ${lo}–${hi} kgf`
+    :`${nh} horses × ${bw}kg = team ${total}kg / sustainable pull ${lo}–${hi} kgf`;
+  el.textContent=msg;
+}
+function fNhChange(){nhInfo('f-nh','f-bw','f-nh-info');fc();}
+function pNhChange(){nhInfo('p-nh','p-bw','p-nh-info');pc();}
+function lNhChange(){nhInfo('l-nh','l-bw','l-nh-info');lc();}
+function gNhChange(){nhInfo('g-nh','g-bw','g-nh-info');gc();}
+
 function fc(){
+  nhInfo('f-nh','f-bw','f-nh-info');
   const bw=num('f-bw',650),nh=int_('f-nh',1),wh=num('f-wh',6);
   const impl=IMPL[v('f-impl')||'mb6'],sk=v('f-soil')||'m';
   const wft=(num('f-w',60))/30.48,fe=num('f-fe',0.65),area=num('f-area',100);
@@ -835,10 +922,13 @@ function wef(w){return w<=0?1:w<=10?1+w*0.012:w<=18?1.12+(w-10)*0.02:w<=36?1.28+
 
 function padPanels(){
   const bw=getBW();
+  const bwLbl=S.lang==='ja'?'1頭あたりの体重 (kg)':'Body Weight per Horse (kg)';
+  const nhLbl=S.lang==='ja'?'頭数 / Horses':'Number of Horses';
   const opOpts=Object.entries(POPS).map(([k,op])=>`<option value="${k}">${S.lang==='ja'?op.ja:op.en}</option>`).join('');
   const p0=`<div class="sec-lbl">${t('ps')}</div><div class="ic">
-<div class="fld"><label>${t('bw')}</label><input type="number" id="p-bw" value="${bw}" min="150" max="1200" onchange="pc()"></div>
-<div class="fld"><label>頭数 / Horses</label><select id="p-nh" onchange="pc()"><option value="1" selected>${t('n1')}</option><option value="2">${t('n2')}</option></select></div>
+<div class="fld"><label>${bwLbl}</label><input type="number" id="p-bw" value="${bw}" min="150" max="1200" onchange="pNhChange()"></div>
+<div class="fld"><label>${nhLbl}</label><select id="p-nh" onchange="pNhChange()"><option value="1" selected>${t('n1')}</option><option value="2">${t('n2')}</option></select>
+<div class="nh-info" id="p-nh-info"></div></div>
 <div class="fld"><label>${t('wh')}</label><div class="rr"><input type="range" id="p-wh" min="3" max="8" step="0.5" value="5" oninput="document.getElementById('pwho').textContent=this.value+' h';pc()"><span class="rv" id="pwho">5 h</span></div></div>
 </div>
 <div class="sec-lbl">${t('op_sec')}</div><div class="ic">
@@ -855,6 +945,7 @@ function padPanels(){
 }
 
 function pc(){
+  nhInfo('p-nh','p-bw','p-nh-info');
   const bw=num('p-bw',500),nh=int_('p-nh',1),wh=num('p-wh',5);
   const op=POPS[v('p-op')||'wet'],sl=v('p-soil')||'loam';
   const wd=num('p-wd',10),wcm=num('p-w',20),area=num('p-area',30);
@@ -947,11 +1038,14 @@ const RHONAMES={
 
 function logPanels(){
   const bw=getBW();
+  const bwLbl=S.lang==='ja'?'1頭あたりの体重 (kg)':'Body Weight per Horse (kg)';
+  const nhLbl=S.lang==='ja'?'頭数 / Horses':'Number of Horses';
   const toolOpts=Object.entries(TOOLS).map(([k,t_])=>`<option value="${k}">${S.lang==='ja'?t_.ja:t_.en}</option>`).join('');
   const spOpts=Object.entries(RHONAMES).map(([k,n])=>`<option value="${k}">${n}</option>`).join('');
   const p0=`<div class="sec-lbl">${t('ps')}</div><div class="ic">
-<div class="fld"><label>${t('bw')}</label><input type="number" id="l-bw" value="${bw}" min="200" max="1200" onchange="lc()"></div>
-<div class="fld"><label>頭数 / Horses</label><select id="l-nh" onchange="lc()"><option value="1" selected>${t('n1')}</option><option value="2">${t('n2')}</option></select></div>
+<div class="fld"><label>${bwLbl}</label><input type="number" id="l-bw" value="${bw}" min="200" max="1200" onchange="lNhChange()"></div>
+<div class="fld"><label>${nhLbl}</label><select id="l-nh" onchange="lNhChange()"><option value="1" selected>${t('n1')}</option><option value="2">${t('n2')}</option></select>
+<div class="nh-info" id="l-nh-info"></div></div>
 <div class="fld"><label>${t('wh')}</label><div class="rr"><input type="range" id="l-wh" min="4" max="8" step="0.5" value="6" oninput="document.getElementById('lwho').textContent=this.value+' h';lc()"><span class="rv" id="lwho">6 h</span></div></div>
 </div>
 <div class="sec-lbl">${t('logset')}</div><div class="ic">
@@ -971,6 +1065,7 @@ function logPanels(){
 }
 
 function lc(){
+  nhInfo('l-nh','l-bw','l-nh-info');
   const bw=num('l-bw',700),nh=int_('l-nh',1),wh=num('l-wh',6);
   const rho=RHO[v('l-sp')||'sugi']||600,len=num('l-len',4),ds=num('l-ds',22),dl=num('l-dl',32),nl=int_('l-nl',1);
   const tool=TOOLS[v('l-tool')||'arch_sod'],slp=num('l-sl',0),dist=num('l-dist',100),tot=int_('l-tot',20);
@@ -1026,11 +1121,14 @@ const GRD={
 
 function gdPanels(){
   const bw=getBW();
+  const bwLbl=S.lang==='ja'?'1頭あたりの体重 (kg)':'Body Weight per Horse (kg)';
+  const nhLbl=S.lang==='ja'?'頭数 / Horses':'Number of Horses';
   const grOpts=Object.entries(GRD).map(([k,g])=>`<option value="${k}">${S.lang==='ja'?g.ja:g.en}</option>`).join('');
   const spOpts=Object.entries(RHONAMES).map(([k,n])=>`<option value="${k}">${n}</option>`).join('');
   const p0=`<div class="sec-lbl">${t('ps')}</div><div class="ic">
-<div class="fld"><label>${t('bw')}</label><input type="number" id="g-bw" value="${bw}" min="200" max="1200" onchange="gc()"></div>
-<div class="fld"><label>頭数 / Horses</label><select id="g-nh" onchange="gc()"><option value="1" selected>${t('n1')}</option><option value="2">${t('n2')}</option></select></div>
+<div class="fld"><label>${bwLbl}</label><input type="number" id="g-bw" value="${bw}" min="200" max="1200" onchange="gNhChange()"></div>
+<div class="fld"><label>${nhLbl}</label><select id="g-nh" onchange="gNhChange()"><option value="1" selected>${t('n1')}</option><option value="2">${t('n2')}</option></select>
+<div class="nh-info" id="g-nh-info"></div></div>
 </div>
 <div class="sec-lbl">${t('logset')}</div><div class="ic">
 <div class="fld"><label>${t('sp')}</label><select id="g-sp" onchange="gdAutoWt()">${spOpts}</select></div>
@@ -1056,6 +1154,7 @@ function gdAutoWt(){
 }
 
 function gc(){
+  nhInfo('g-nh','g-bw','g-nh-info');
   const bw=num('g-bw',700),nh=int_('g-nh',1);
   const wt=num('g-wt',300),dia=num('g-ds',25),g=GRD[v('g-gr')||'firm'];
   const sk=num('g-sk',5),slp=num('g-sl',0);
@@ -1600,15 +1699,76 @@ refreshHome();
 // PWA: Inline Service Worker（単一HTMLファイルで動作）
 if('serviceWorker' in navigator){
   const swCode=`
-const CACHE='hpl5-v1';
+const CACHE='hpl5-v2';
 const URLS=[self.location.href.replace(/\\/[^\\/]*$/,'/')+''];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(URLS).catch(()=>{})));self.skipWaiting();});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim();});
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{if(res&&res.status===200){const c=res.clone();caches.open(CACHE).then(ca=>ca.put(e.request,c));}return res;}).catch(()=>caches.match(e.request))));});
+self.addEventListener('message',e=>{if(e.data&&e.data.type==='SKIP_WAITING')self.skipWaiting();});
 `;
   const blob=new Blob([swCode],{type:'application/javascript'});
   const swUrl=URL.createObjectURL(blob);
-  navigator.serviceWorker.register(swUrl,{scope:'./'}).catch(()=>{});
+
+  navigator.serviceWorker.register(swUrl,{scope:'./'}).then(reg=>{
+    // 新しいSWが待機状態になったら → アップデートバナーを表示
+    reg.addEventListener('updatefound',()=>{
+      const newSW=reg.installing;
+      if(!newSW)return;
+      newSW.addEventListener('statechange',()=>{
+        if(newSW.state==='installed'&&navigator.serviceWorker.controller){
+          showUpdateBanner();
+        }
+      });
+    });
+    // ページロード時にも更新チェック（バックグラウンドで差分確認）
+    reg.update().catch(()=>{});
+  }).catch(()=>{});
+
+  // 他タブでSWが更新されたら自動リロード
+  let refreshing=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    if(!refreshing){refreshing=true;window.location.reload();}
+  });
+}
+
+function showUpdateBanner(){
+  // すでに表示中なら無視
+  if(document.getElementById('update-banner'))return;
+  const lang=S.lang||'ja';
+  const msg=lang==='ja'
+    ?'🐴 アプリが更新されました。再読み込みして最新版を使えます。'
+    :'🐴 App updated. Reload to get the latest version.';
+  const btn=lang==='ja'?'今すぐ更新':'Update Now';
+  const later=lang==='ja'?'あとで':'Later';
+  const banner=document.createElement('div');
+  banner.id='update-banner';
+  banner.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;background:#1a1a1a;color:#f5f5f5;border-radius:14px;padding:14px 18px;display:flex;flex-direction:column;gap:10px;box-shadow:0 6px 28px rgba(0,0,0,.4);max-width:calc(100vw - 40px);width:340px;font-size:14px;line-height:1.5;animation:slideUp .3s ease';
+  banner.innerHTML=`
+<div>${msg}</div>
+<div style="display:flex;gap:8px;justify-content:flex-end">
+  <button onclick="document.getElementById('update-banner').remove()" style="background:rgba(255,255,255,.12);border:none;color:#ccc;padding:7px 14px;border-radius:8px;font-size:13px;cursor:pointer">${later}</button>
+  <button onclick="applyUpdate()" style="background:#2d7a5e;border:none;color:#fff;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">${btn}</button>
+</div>`;
+  // アニメーション
+  if(!document.getElementById('update-banner-style')){
+    const s=document.createElement('style');
+    s.id='update-banner-style';
+    s.textContent='@keyframes slideUp{from{opacity:0;transform:translateX(-50%) translateY(20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}';
+    document.head.appendChild(s);
+  }
+  document.body.appendChild(banner);
+}
+
+function applyUpdate(){
+  // 待機中のSWに skipWaiting を指示してリロード
+  if(navigator.serviceWorker.controller){
+    navigator.serviceWorker.ready.then(reg=>{
+      if(reg.waiting){reg.waiting.postMessage({type:'SKIP_WAITING'});}
+      else{window.location.reload();}
+    });
+  } else {
+    window.location.reload();
+  }
 }
 
 </script>
