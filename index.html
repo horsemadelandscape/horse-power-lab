@@ -45,7 +45,7 @@ input:focus,select:focus{outline:none;border-color:var(--ok);background:#fff}
 .logo{font-weight:800;font-size:17px;letter-spacing:-.3px;color:var(--text)}
 .logo span{font-size:13px;font-weight:400;color:var(--text3);margin-left:8px;letter-spacing:0}
 .nt{font-weight:700;font-size:16px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.nb{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:var(--rs);color:var(--text2)}
+.nb{width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:var(--rs);color:var(--text2)}
 .nb:hover{background:var(--bg2)}
 .nb svg{width:18px;height:18px}
 .lt{display:flex;border:1px solid var(--border2);border-radius:20px;overflow:hidden;flex-shrink:0}
@@ -75,7 +75,7 @@ input:focus,select:focus{outline:none;border-color:var(--ok);background:#fff}
 /* CALC TOP NAV — Chrome-style tab bar */
 #cnav{display:flex;align-items:flex-end;border-bottom:2px solid var(--border2);background:var(--bg2);flex-shrink:0;gap:0;padding:0 10px 0 6px}
 .tab-bar{display:flex;flex:1;align-items:flex-end;gap:2px;overflow:hidden}
-.tab-btn{flex:1;display:flex;align-items:center;justify-content:center;padding:9px 8px 8px;font-size:13px;font-weight:600;color:var(--text3);cursor:pointer;white-space:nowrap;border:none;background:transparent;border-radius:8px 8px 0 0;position:relative;bottom:-2px;border:1.5px solid transparent;border-bottom:none;transition:background .15s,color .15s}
+.tab-btn{flex:1;display:flex;align-items:center;justify-content:center;padding:12px 8px 10px;font-size:13px;font-weight:600;color:var(--text3);cursor:pointer;white-space:nowrap;border:none;background:transparent;border-radius:8px 8px 0 0;position:relative;bottom:-2px;border:1.5px solid transparent;border-bottom:none;transition:background .15s,color .15s}
 .tab-btn:hover{background:var(--bg3);color:var(--text2)}
 .tab-btn.on{background:var(--card);color:var(--text);border-color:var(--border2);border-bottom:2px solid var(--card);z-index:1}
 .db-btn{display:flex;align-items:center;gap:5px;padding:8px 10px 10px;font-size:13px;color:var(--text2);font-family:var(--ffm);flex-shrink:0;border:none;background:none;cursor:pointer;transition:all .15s;align-self:center}
@@ -766,7 +766,7 @@ function farmPanels(){
 <div class="fld"><label>${t('soil')}</label><select id="f-soil" onchange="fc()"><option value="c">${t('sc')}</option><option value="m" selected>${t('sm')}</option><option value="f">${t('sf')}</option></select></div>
 <div class="fld"><label id="f-wlbl">${t('width')}</label><input type="number" id="f-w" value="20" min="5" max="400" onchange="fc()"></div>
 <div class="fld" id="f-wguide" style="font-size:12px;color:var(--text3);font-family:var(--ffm)"></div>
-<div class="fld"><label>${t('fe')}</label><select id="f-fe" onchange="fc()"><option value="0.50">0.50 — 劣悪/Poor</option><option value="0.65" selected>0.65 — 標準/Standard</option><option value="0.75">0.75 — 良好/Good</option></select></div>
+<div class="fld"><label>${t('fe')}</label><select id="f-fe" onchange="fc()"><option value="0.50">0.50 — 劣悪/Poor</option><option value="0.65" selected>0.65 — 標準/Standard</option><option value="0.75">0.75 — 良好/Good</option></select><div style="font-size:12px;color:var(--text3);margin-top:5px;line-height:1.5">${S.lang==='en'?'Ratio of actual field time to total work time. Includes turns, stops, and adjustments.':'実際に農具が地面に入っている時間の割合。旋回・停止・調整の時間を除いた実質作業比率。'}</div></div>
 </div>
 <div class="sec-lbl">${t('area_sec')}</div><div class="ic">
 <div class="fld"><label>${t('area')}</label><input type="number" id="f-area" value="100" min="1" max="5000" onchange="fc()"></div>
@@ -864,7 +864,7 @@ function pc(){
   const wf=wef(wd),plo=bw*nh*0.10,phi=bw*nh*0.12;
   const effPull=bw*nh*0.11*(1-(wd>0?0.08*op.wm:0));
   const spad=Math.max(op.sp*(1-wd/100*op.wm*0.5),20);
-  const ahr=(spad*60*(wcm/100)*op.fe)/100,aday=(ahr*wh)/(op.passes||1),days=area/aday;
+  const ahr=(spad*60*(wcm/100)*op.fe*nh)/100,aday=(ahr*wh)/(op.passes||1),days=area/aday;
   const pct=dr/effPull*100;
   const pw=dr*9.81*(spad/60),wkJ=pw*wh*3.6;
   const de_maint=0.0333*bw*nh,de_total=0.0333*bw*nh*(DEM[op.wt]||1.60)*wf,de_work=de_total-de_maint;
