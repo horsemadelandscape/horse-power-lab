@@ -757,19 +757,19 @@ function farmPanels(){
   const bw=getBW();
   const impOpts=Object.entries(IMPL).map(([k,v_])=>`<option value="${k}">${S.lang==='ja'?v_.ja:v_.en}</option>`).join('');
   const p0=`<div class="sec-lbl">${t('ps')}</div><div class="ic">
-<div class="fld"><label>${t('bw')}</label><input type="number" id="f-bw" value="${bw}" min="200" max="1200" onchange="fc()"></div>
+<div class="fld"><label>${t('bw')}</label><input type="number" id="f-bw" value="${bw}" min="200" max="1200" onchange="fc()" oninput="fc()"></div>
 <div class="fld"><label>頭数 / Horses</label><select id="f-nh" onchange="fc()"><option value="1" selected>${t('n1')}</option><option value="2">${t('n2')}</option><option value="3">${t('n3')}</option><option value="4">${t('n4')}</option></select></div>
 <div class="fld"><label>${t('wh')}</label><div class="rr"><input type="range" id="f-wh" min="4" max="10" step="0.5" value="6" oninput="document.getElementById('fwho').textContent=this.value+' h';fc()"><span class="rv" id="fwho">6 h</span></div></div>
 </div>
 <div class="sec-lbl">${t('imp')}</div><div class="ic">
 <div class="fld"><label>農具 / Implement</label><select id="f-impl" onchange="onImplChange()">${impOpts}</select></div>
 <div class="fld"><label>${t('soil')}</label><select id="f-soil" onchange="fc()"><option value="c">${t('sc')}</option><option value="m" selected>${t('sm')}</option><option value="f">${t('sf')}</option></select></div>
-<div class="fld"><label id="f-wlbl">${t('width')}</label><input type="number" id="f-w" value="20" min="5" max="400" onchange="fc()"></div>
+<div class="fld"><label id="f-wlbl">${t('width')}</label><input type="number" id="f-w" value="20" min="5" max="400" onchange="fc()" oninput="fc()"></div>
 <div class="fld" id="f-wguide" style="font-size:12px;color:var(--text3);font-family:var(--ffm)"></div>
 <div class="fld"><label>${t('fe')}</label><select id="f-fe" onchange="fc()"><option value="0.50">0.50 — 劣悪/Poor</option><option value="0.65" selected>0.65 — 標準/Standard</option><option value="0.75">0.75 — 良好/Good</option></select><div style="font-size:12px;color:var(--text3);margin-top:5px;line-height:1.5">${S.lang==='en'?'Ratio of actual working time vs. total field time. Accounts for turns, stops & adjustments.':'実際に農具が地面に入っている時間の割合。旋回・停止・調整の時間を除いた実質作業比率。'}</div></div>
 </div>
 <div class="sec-lbl">${t('area_sec')}</div><div class="ic">
-<div class="fld"><label>${t('area')}</label><input type="number" id="f-area" value="100" min="1" max="5000" onchange="fc()"></div>
+<div class="fld"><label>${t('area')}</label><input type="number" id="f-area" value="100" min="1" max="5000" onchange="fc()" oninput="fc()"></div>
 <div class="fld" id="f-area-cv" style="font-size:14px;color:var(--text2);font-family:var(--ffm)"></div>
 </div>`;
   return [p0,`<div id="trust-badge-farm" style="margin-bottom:6px"></div><div id="fr"></div>`,`<div class="ptitle">${t('pe')}</div><div id="fe2"></div>`];
@@ -837,7 +837,7 @@ function padPanels(){
   const bw=getBW();
   const opOpts=Object.entries(POPS).map(([k,op])=>`<option value="${k}">${S.lang==='ja'?op.ja:op.en}</option>`).join('');
   const p0=`<div class="sec-lbl">${t('ps')}</div><div class="ic">
-<div class="fld"><label>${t('bw')}</label><input type="number" id="p-bw" value="${bw}" min="150" max="1200" onchange="pc()"></div>
+<div class="fld"><label>${t('bw')}</label><input type="number" id="p-bw" value="${bw}" min="150" max="1200" onchange="pc()" oninput="pc()"></div>
 <div class="fld"><label>頭数 / Horses</label><select id="p-nh" onchange="pc()"><option value="1" selected>${t('n1')}</option><option value="2">${t('n2')}</option></select></div>
 <div class="fld"><label>${t('wh')}</label><div class="rr"><input type="range" id="p-wh" min="3" max="8" step="0.5" value="5" oninput="document.getElementById('pwho').textContent=this.value+' h';pc()"><span class="rv" id="pwho">5 h</span></div></div>
 </div>
@@ -845,10 +845,10 @@ function padPanels(){
 <div class="fld"><label>${t('op')}</label><select id="p-op" onchange="pc()">${opOpts}</select></div>
 <div class="fld"><label>土壌 / Soil</label><select id="p-soil" onchange="pc()"><option value="clay">粘土 / Clay — 高抵抗</option><option value="loam" selected>壌土 / Loam — 中抵抗</option><option value="sand">砂質 / Sandy — 低抵抗</option></select></div>
 <div class="fld"><label>${t('wd')}</label><div class="rr"><input type="range" id="p-wd" min="0" max="54" step="3" value="10" oninput="document.getElementById('pwdo').textContent=this.value+' cm';pc()"><span class="rv" id="pwdo">10 cm</span></div></div>
-<div class="fld"><label>農具幅 / Width (cm)</label><input type="number" id="p-w" value="20" min="10" max="150" onchange="pc()"></div>
+<div class="fld"><label>農具幅 / Width (cm)</label><input type="number" id="p-w" value="20" min="10" max="150" onchange="pc()" oninput="pc()"></div>
 </div>
 <div class="sec-lbl">${t('area_sec')}</div><div class="ic">
-<div class="fld"><label>${t('area')}</label><input type="number" id="p-area" value="1" min="1" max="500" onchange="pc()"></div>
+<div class="fld"><label>${t('area')}</label><input type="number" id="p-area" value="1" min="1" max="500" onchange="pc()" oninput="pc()"></div>
 <div class="fld" id="p-area-cv" style="font-size:14px;color:var(--text2);font-family:var(--ffm)"></div>
 </div>`;
   return [p0,`<div class="ptitle">${t('pr')}</div><div id="pr2"></div>`,`<div class="ptitle">${t('pe')}</div><div id="pe2"></div>`];
@@ -950,22 +950,22 @@ function logPanels(){
   const toolOpts=Object.entries(TOOLS).map(([k,t_])=>`<option value="${k}">${S.lang==='ja'?t_.ja:t_.en}</option>`).join('');
   const spOpts=Object.entries(RHONAMES).map(([k,n])=>`<option value="${k}">${n}</option>`).join('');
   const p0=`<div class="sec-lbl">${t('ps')}</div><div class="ic">
-<div class="fld"><label>${t('bw')}</label><input type="number" id="l-bw" value="${bw}" min="200" max="1200" onchange="lc()"></div>
+<div class="fld"><label>${t('bw')}</label><input type="number" id="l-bw" value="${bw}" min="200" max="1200" onchange="lc()" oninput="lc()"></div>
 <div class="fld"><label>頭数 / Horses</label><select id="l-nh" onchange="lc()"><option value="1" selected>${t('n1')}</option><option value="2">${t('n2')}</option></select></div>
 <div class="fld"><label>${t('wh')}</label><div class="rr"><input type="range" id="l-wh" min="4" max="8" step="0.5" value="6" oninput="document.getElementById('lwho').textContent=this.value+' h';lc()"><span class="rv" id="lwho">6 h</span></div></div>
 </div>
 <div class="sec-lbl">${t('logset')}</div><div class="ic">
 <div class="fld"><label>${t('sp')}</label><select id="l-sp" onchange="lc()">${spOpts}</select></div>
-<div class="fld"><label>${t('ll')}</label><input type="number" id="l-len" value="4" min="0.5" max="20" step="0.1" onchange="lc()"></div>
-<div class="fld"><label>${t('ds')}</label><input type="number" id="l-ds" value="22" min="5" max="120" onchange="lc()"></div>
-<div class="fld"><label>${t('dl')}</label><input type="number" id="l-dl" value="32" min="5" max="150" onchange="lc()"></div>
-<div class="fld"><label>${t('nl')}</label><input type="number" id="l-nl" value="1" min="1" max="5" onchange="lc()"></div>
+<div class="fld"><label>${t('ll')}</label><input type="number" id="l-len" value="4" min="0.5" max="20" step="0.1" onchange="lc()" oninput="lc()"></div>
+<div class="fld"><label>${t('ds')}</label><input type="number" id="l-ds" value="22" min="5" max="120" onchange="lc()" oninput="lc()"></div>
+<div class="fld"><label>${t('dl')}</label><input type="number" id="l-dl" value="32" min="5" max="150" onchange="lc()" oninput="lc()"></div>
+<div class="fld"><label>${t('nl')}</label><input type="number" id="l-nl" value="1" min="1" max="5" onchange="lc()" oninput="lc()"></div>
 </div>
 <div class="sec-lbl">${t('terrset')}</div><div class="ic">
 <div class="fld"><label>${t('tool')}</label><select id="l-tool" onchange="lc()">${toolOpts}</select></div>
 <div class="fld"><label>${t('slope')}</label><div class="rr"><input type="range" id="l-sl" min="-30" max="50" step="1" value="0" oninput="document.getElementById('lslo').textContent=(parseInt(this.value)>0?'+':'')+this.value+'%';lc()"><span class="rv" id="lslo">0%</span></div></div>
-<div class="fld"><label>${t('dist')}</label><input type="number" id="l-dist" value="100" min="10" max="2000" onchange="lc()"></div>
-<div class="fld"><label>${t('total_logs')}</label><input type="number" id="l-tot" value="1" min="1" max="1000" onchange="lc()"></div>
+<div class="fld"><label>${t('dist')}</label><input type="number" id="l-dist" value="100" min="10" max="2000" onchange="lc()" oninput="lc()"></div>
+<div class="fld"><label>${t('total_logs')}</label><input type="number" id="l-tot" value="1" min="1" max="1000" onchange="lc()" oninput="lc()"></div>
 </div>`;
   return [p0,`<div class="ptitle">${t('pr')}</div><div id="lr2"></div>`,`<div class="ptitle">${t('pe')}</div><div id="le2"></div>`];
 }
@@ -1029,20 +1029,20 @@ function gdPanels(){
   const grOpts=Object.entries(GRD).map(([k,g])=>`<option value="${k}">${S.lang==='ja'?g.ja:g.en}</option>`).join('');
   const spOpts=Object.entries(RHONAMES).map(([k,n])=>`<option value="${k}">${n}</option>`).join('');
   const p0=`<div class="sec-lbl">${t('ps')}</div><div class="ic">
-<div class="fld"><label>${t('bw')}</label><input type="number" id="g-bw" value="${bw}" min="200" max="1200" onchange="gc()"></div>
+<div class="fld"><label>${t('bw')}</label><input type="number" id="g-bw" value="${bw}" min="200" max="1200" onchange="gc()" oninput="gc()"></div>
 <div class="fld"><label>頭数 / Horses</label><select id="g-nh" onchange="gc()"><option value="1" selected>${t('n1')}</option><option value="2">${t('n2')}</option></select></div>
 </div>
 <div class="sec-lbl">${t('logset')}</div><div class="ic">
 <div class="fld"><label>${t('sp')}</label><select id="g-sp" onchange="gdAutoWt()">${spOpts}</select></div>
-<div class="fld"><label>${t('ll')}</label><input type="number" id="g-len" value="4" min="0.5" max="20" step="0.1" onchange="gdAutoWt()"></div>
-<div class="fld"><label>${t('ds')} — 末口（先端）</label><input type="number" id="g-ds" value="25" min="5" max="120" onchange="gdAutoWt()"></div>
-<div class="fld"><label>${t('dl')} — 元口（根元）</label><input type="number" id="g-dl" value="35" min="5" max="150" onchange="gdAutoWt()"></div>
-<div class="fld"><label>丸太重量 / Log weight (kg) <span style="color:var(--text3);font-size:13px">自動計算</span></label><input type="number" id="g-wt" value="174" min="10" max="5000" onchange="gc()"></div>
+<div class="fld"><label>${t('ll')}</label><input type="number" id="g-len" value="4" min="0.5" max="20" step="0.1" onchange="gdAutoWt()" oninput="gdAutoWt()"></div>
+<div class="fld"><label>${t('ds')} — 末口（先端）</label><input type="number" id="g-ds" value="25" min="5" max="120" onchange="gdAutoWt()" oninput="gdAutoWt()"></div>
+<div class="fld"><label>${t('dl')} — 元口（根元）</label><input type="number" id="g-dl" value="35" min="5" max="150" onchange="gdAutoWt()" oninput="gdAutoWt()"></div>
+<div class="fld"><label>丸太重量 / Log weight (kg) <span style="color:var(--text3);font-size:13px">自動計算</span></label><input type="number" id="g-wt" value="174" min="10" max="5000" onchange="gc()" oninput="gc()"></div>
 </div>
 <div class="sec-lbl">${t('gndset')}</div><div class="ic">
 <div class="fld"><label>${t('gr')}</label><select id="g-gr" onchange="gc()">${grOpts}</select></div>
-<div class="fld"><label>${t('dist')} — 搬出距離</label><input type="number" id="g-dist" value="50" min="5" max="500" onchange="gc()"><div style="font-size:12px;color:var(--text3);margin-top:4px;line-height:1.5">${S.lang==='en'?'One-way skidding distance (m)':'片道の搬出距離（m）。往復の仕事量を計算します。'}</div></div>
-<div class="fld"><label>${t('sk')} — 素引き時の先端の沈み込み</label><div class="rr"><input type="range" id="g-sk" min="0" max="20" step="1" value="2" oninput="document.getElementById('gsko').textContent=this.value+' cm';gc()"><span class="rv" id="gsko">5 cm</span></div></div>
+<div class="fld"><label>${t('dist')} — 搬出距離</label><input type="number" id="g-dist" value="50" min="5" max="500" onchange="gc()" oninput="gc()"><div style="font-size:12px;color:var(--text3);margin-top:4px;line-height:1.5">${S.lang==='en'?'One-way skidding distance (m)':'片道の搬出距離（m）。往復の仕事量を計算します。'}</div></div>
+<div class="fld"><label>${t('sk')} — 素引き時の先端の沈み込み</label><div class="rr"><input type="range" id="g-sk" min="0" max="20" step="1" value="2" oninput="document.getElementById('gsko').textContent=this.value+' cm';gc()"><span class="rv" id="gsko">2 cm</span></div></div>
 <div class="fld"><label>${t('slope')}</label><div class="rr"><input type="range" id="g-sl" min="-30" max="50" step="1" value="0" oninput="document.getElementById('gslo').textContent=(parseInt(this.value)>0?'+':'')+this.value+'%';gc()"><span class="rv" id="gslo">0%</span></div></div>
 </div>`;
   return [p0,`<div id="gr2"></div>`];
