@@ -766,7 +766,7 @@ function farmPanels(){
 <div class="fld"><label>${t('soil')}</label><select id="f-soil" onchange="fc()"><option value="c">${t('sc')}</option><option value="m" selected>${t('sm')}</option><option value="f">${t('sf')}</option></select></div>
 <div class="fld"><label id="f-wlbl">${t('width')}</label><input type="number" id="f-w" value="20" min="5" max="400" onchange="fc()"></div>
 <div class="fld" id="f-wguide" style="font-size:12px;color:var(--text3);font-family:var(--ffm)"></div>
-<div class="fld"><label>${t('fe')}</label><select id="f-fe" onchange="fc()"><option value="0.50">0.50 — 劣悪/Poor</option><option value="0.65" selected>0.65 — 標準/Standard</option><option value="0.75">0.75 — 良好/Good</option></select><div style="font-size:12px;color:var(--text3);margin-top:5px;line-height:1.5">${S.lang==='en'?'Ratio of actual field time to total work time. Includes turns, stops, and adjustments.':'実際に農具が地面に入っている時間の割合。旋回・停止・調整の時間を除いた実質作業比率。'}</div></div>
+<div class="fld"><label>${t('fe')}</label><select id="f-fe" onchange="fc()"><option value="0.50">0.50 — 劣悪/Poor</option><option value="0.65" selected>0.65 — 標準/Standard</option><option value="0.75">0.75 — 良好/Good</option></select><div style="font-size:12px;color:var(--text3);margin-top:5px;line-height:1.5">${S.lang==='en'?'Ratio of actual working time vs. total field time. Accounts for turns, stops & adjustments.':'実際に農具が地面に入っている時間の割合。旋回・停止・調整の時間を除いた実質作業比率。'}</div></div>
 </div>
 <div class="sec-lbl">${t('area_sec')}</div><div class="ic">
 <div class="fld"><label>${t('area')}</label><input type="number" id="f-area" value="100" min="1" max="5000" onchange="fc()"></div>
@@ -792,7 +792,7 @@ function fc(){
     dr=(50/20)*num('f-w',20)*nh;
   } else {
     const lbfPft=sk==='c'?impl.c:sk==='m'?impl.m:impl.f;
-    dr=lbfPft*wft*nh*0.4536;
+    dr=lbfPft*wft*0.4536;
   }
   const plo=bw*nh*0.10,phi=bw*nh*0.12,pmd=(plo+phi)/2;
   const spkmh=impl.sp*1.60934;
@@ -860,7 +860,7 @@ function pc(){
   const wd=num('p-wd',10),wcm=num('p-w',20),area=num('p-area',30);
   const cv=document.getElementById('p-area-cv');
   if(cv)cv.textContent=`= ${(area/100).toFixed(2)} ha / ${(area*0.0247).toFixed(2)} acres`;
-  const dr=(op.d[sl]||op.d.loam)*(wcm/30)*nh;
+  const dr=(op.d[sl]||op.d.loam)*(wcm/30);
   const wf=wef(wd),plo=bw*nh*0.10,phi=bw*nh*0.12;
   const effPull=bw*nh*0.11*(1-(wd>0?0.08*op.wm:0));
   const spad=Math.max(op.sp*(1-wd/100*op.wm*0.5),20);
@@ -1600,15 +1600,58 @@ refreshHome();
 // PWA: Inline Service Worker（単一HTMLファイルで動作）
 if('serviceWorker' in navigator){
   const swCode=`
-const CACHE='hpl5-v1';
+const CACHE='hpl5-v2';
 const URLS=[self.location.href.replace(/\\/[^\\/]*$/,'/')+''];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(URLS).catch(()=>{})));self.skipWaiting();});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim();});
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{if(res&&res.status===200){const c=res.clone();caches.open(CACHE).then(ca=>ca.put(e.request,c));}return res;}).catch(()=>caches.match(e.request))));});
+self.addEventListener('message',e=>{if(e.data&&e.data.type==='SKIP_WAITING')self.skipWaiting();});
 `;
   const blob=new Blob([swCode],{type:'application/javascript'});
   const swUrl=URL.createObjectURL(blob);
-  navigator.serviceWorker.register(swUrl,{scope:'./'}).catch(()=>{});
+  navigator.serviceWorker.register(swUrl,{scope:'./'}).then(reg=>{
+    reg.addEventListener('updatefound',()=>{
+      const newSW=reg.installing;
+      if(!newSW)return;
+      newSW.addEventListener('statechange',()=>{
+        if(newSW.state==='installed'&&navigator.serviceWorker.controller){
+          showUpdateBanner();
+        }
+      });
+    });
+    reg.update().catch(()=>{});
+  }).catch(()=>{});
+  let refreshing=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    if(!refreshing){refreshing=true;window.location.reload();}
+  });
+}
+
+function showUpdateBanner(){
+  if(document.getElementById('update-banner'))return;
+  const lang=S.lang||'ja';
+  const msg=lang==='ja'?'🐴 アプリが更新されました。再読み込みして最新版を使えます。':'🐴 App updated. Reload to get the latest version.';
+  const btn=lang==='ja'?'今すぐ更新':'Update Now';
+  const later=lang==='ja'?'あとで':'Later';
+  const banner=document.createElement('div');
+  banner.id='update-banner';
+  banner.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;background:#1a1a1a;color:#f5f5f5;border-radius:14px;padding:14px 18px;display:flex;flex-direction:column;gap:10px;box-shadow:0 6px 28px rgba(0,0,0,.4);max-width:calc(100vw - 40px);width:340px;font-size:14px;line-height:1.5;animation:slideUp .3s ease';
+  banner.innerHTML=`<div>${msg}</div><div style="display:flex;gap:8px;justify-content:flex-end"><button onclick="document.getElementById('update-banner').remove()" style="background:rgba(255,255,255,.12);border:none;color:#ccc;padding:7px 14px;border-radius:8px;font-size:13px;cursor:pointer">${later}</button><button onclick="applyUpdate()" style="background:#2d7a5e;border:none;color:#fff;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">${btn}</button></div>`;
+  if(!document.getElementById('update-banner-style')){
+    const s=document.createElement('style');s.id='update-banner-style';
+    s.textContent='@keyframes slideUp{from{opacity:0;transform:translateX(-50%) translateY(20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}';
+    document.head.appendChild(s);
+  }
+  document.body.appendChild(banner);
+}
+
+function applyUpdate(){
+  if(navigator.serviceWorker.controller){
+    navigator.serviceWorker.ready.then(reg=>{
+      if(reg.waiting){reg.waiting.postMessage({type:'SKIP_WAITING'});}
+      else{window.location.reload();}
+    });
+  } else {window.location.reload();}
 }
 
 </script>
