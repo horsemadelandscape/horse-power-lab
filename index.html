@@ -45,9 +45,9 @@ input:focus,select:focus{outline:none;border-color:var(--ok);background:#fff}
 .logo{font-weight:800;font-size:17px;letter-spacing:-.3px;color:var(--text)}
 .logo span{font-size:13px;font-weight:400;color:var(--text3);margin-left:8px;letter-spacing:0}
 .nt{font-weight:700;font-size:16px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.nb{width:44px;height:44px;min-width:44px;min-height:44px;padding:10px;display:flex;align-items:center;justify-content:center;border-radius:var(--rs);color:var(--text2)}
+.nb{width:56px;height:56px;min-width:56px;min-height:56px;padding:14px;display:flex;align-items:center;justify-content:center;border-radius:var(--rs);color:var(--text2)}
 .nb:hover{background:var(--bg2)}
-.nb svg{width:18px;height:18px}
+.nb svg{width:22px;height:22px;pointer-events:none}
 .lt{display:flex;border:1px solid var(--border2);border-radius:20px;overflow:hidden;flex-shrink:0}
 .lb{padding:4px 11px;font-size:13px;font-family:var(--ffm);color:var(--text3);transition:all .15s}
 .lb.on{background:var(--text);color:#fff}
@@ -75,7 +75,7 @@ input:focus,select:focus{outline:none;border-color:var(--ok);background:#fff}
 /* CALC TOP NAV — Chrome-style tab bar */
 #cnav{display:flex;align-items:flex-end;border-bottom:2px solid var(--border2);background:var(--bg2);flex-shrink:0;gap:0;padding:0 10px 0 6px}
 .tab-bar{display:flex;flex:1;align-items:flex-end;gap:2px;overflow:hidden}
-.tab-btn{flex:1;display:flex;align-items:center;justify-content:center;padding:12px 8px 10px;font-size:13px;font-weight:600;color:var(--text3);cursor:pointer;white-space:nowrap;border:none;background:transparent;border-radius:8px 8px 0 0;position:relative;bottom:-2px;border:1.5px solid transparent;border-bottom:none;transition:background .15s,color .15s}
+.tab-btn{flex:1;display:flex;align-items:center;justify-content:center;padding:16px 8px 14px;min-height:52px;font-size:14px;font-weight:600;color:var(--text3);cursor:pointer;white-space:nowrap;border:none;background:transparent;border-radius:8px 8px 0 0;position:relative;bottom:-2px;border:1.5px solid transparent;border-bottom:none;transition:background .15s,color .15s}
 .tab-btn:hover{background:var(--bg3);color:var(--text2)}
 .tab-btn.on{background:var(--card);color:var(--text);border-color:var(--border2);border-bottom:2px solid var(--card);z-index:1}
 .db-btn{display:flex;align-items:center;gap:5px;padding:8px 10px 10px;font-size:13px;color:var(--text2);font-family:var(--ffm);flex-shrink:0;border:none;background:none;cursor:pointer;transition:all .15s;align-self:center}
@@ -94,11 +94,11 @@ input:focus,select:focus{outline:none;border-color:var(--ok);background:#fff}
 .fld{margin-bottom:10px}
 .fld:last-child{margin-bottom:0}
 .fld label{display:block;font-size:14px;color:var(--text2);margin-bottom:4px;font-weight:500}
-.rr{display:flex;align-items:center;gap:8px}
+.rr{display:flex;align-items:center;gap:8px;min-height:44px}
 .rr input[type=range]{flex:1}
 .rv{font-family:var(--ffm);font-size:14px;min-width:52px;text-align:right;color:var(--ok);font-weight:500}
-input[type=range]{-webkit-appearance:none;height:3px;border-radius:2px;background:var(--bg3);border:none;padding:0;cursor:pointer}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--ok);cursor:pointer;border:2.5px solid #fff;box-shadow:0 0 0 1.5px var(--ok)}
+input[type=range]{-webkit-appearance:none;height:8px;border-radius:4px;background:var(--bg3);border:none;padding:0;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:32px;height:32px;border-radius:50%;background:var(--ok);cursor:pointer;border:3px solid #fff;box-shadow:0 0 0 2px var(--ok)}
 
 /* RESULT CARDS */
 .rc{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px}
@@ -195,11 +195,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
   box-shadow:0 8px 32px rgba(0,0,0,.22);
   opacity:0;transform:translateY(8px);
   transition:opacity .3s,transform .3s;
-  pointer-events:auto;
+  pointer-events:none;
   z-index:952;
   --arrow-l:24px;
 }
-.guide-bubble.show{opacity:1;transform:translateY(0)}
+.guide-bubble.show{opacity:1;transform:translateY(0);pointer-events:auto}
 .guide-bubble.gb-arrow-top::before{
   content:'';position:absolute;
   top:-13px;left:var(--arrow-l);
@@ -783,8 +783,7 @@ function farmPanels(){
 <div class="fld"><label>${t('soil')}</label><select id="f-soil" onchange="fc()" oninput="fc()"><option value="c">${t('sc')}</option><option value="m" selected>${t('sm')}</option><option value="f">${t('sf')}</option></select></div>
 <div class="fld"><label id="f-wlbl">${t('width')}</label><input type="number" id="f-w" value="20" min="5" max="400" onchange="fc()" oninput="fc()"></div>
 <div class="fld" id="f-wguide" style="font-size:12px;color:var(--text3);font-family:var(--ffm)"></div>
-<div class="fld"><label>${t('fe')}</label><select id="f-fe" onchange="fc()" oninput="fc()"><option value="0.50">0.50 — 劣悪/Poor</option><option value="0.65" selected>0.65 — 標準/Standard</option><option value="0.75">0.75 — 良好/Good</option></select><div style="font-size:12px;color:var(--text3);margin-top:5px;line-height:1.5">${S.lang==='en'?'Ratio of actual working time vs. total field time. Accounts for turns, stops & adjustments.':'実際に農具が地面に入っている時間の割合。旋回・停止・調整の時間を除いた実質作業比率。'}</div></div>
-</div>
+<div class="fld"><label>${t('fe')}</label><select id="f-fe" onchange="fc()" oninput="fc()"><option value="0.50">0.50 — 劣悪/Poor</option><option value="0.65" selected>0.65 — 標準/Standard</option><option value="0.75">0.75 — 良好/Good</option></select><div style="font-size:12px;color:var(--text3);margin-top:5px;line-height:1.5">${S.lang==='en'?'Ratio of actual working time vs. total field time. Accounts for turns, stops & adjustments.':'実際に農具が地面に入っている時間の割合。旋回・停止・調整の時間を除いた実質作業比率。'}</div></div></div>
 <div class="sec-lbl">${t('area_sec')}</div><div class="ic">
 <div class="fld"><label>${t('area')}</label><input type="number" id="f-area" value="100" min="1" max="5000" onchange="fc()" oninput="fc()"></div>
 <div class="fld" id="f-area-cv" style="font-size:14px;color:var(--text2);font-family:var(--ffm)"></div>
@@ -858,8 +857,8 @@ const PTOOL={
   manga: {manga_model:true,defW:90,trust:'B',
     ja:'馬鍬（まんが）',        en:'Horse Harrow (Manga)',
     ops:['wet','p1','p2']},
-  rotary:{dr_f:1.30,sp_f:0.80,defW:60,trust:'B',
-    ja:'回転式代かき機',        en:'Rotary Puddler',
+  rotary:{rotary_model:true,defW:60,trust:'B',
+    ja:'回転式代かき機',        en:'Rotary Disc Puddler',
     ops:['p1','p2']},
   rake:  {dr_f:0.45,sp_f:1.20,defW:120,trust:'C',
     ja:'代かきレーキ',          en:'Puddling Rake',
@@ -893,12 +892,16 @@ function onPadToolChange(){
   const wEl=document.getElementById('p-w');
   const sel=document.getElementById('p-tool');
   if(wEl&&sel)wEl.value=PTOOL[sel.value]?.defW||20;
-  // manga専用欄の表示切替
+  const toolKey=sel?sel.value:'';
+  // manga専用欄
   const mangaExtra=document.getElementById('p-manga-extra');
-  if(mangaExtra)mangaExtra.style.display=(sel&&sel.value==='manga')?'':'none';
-  // 農具幅ラベル行の表示切替（manga時は本数・棒幅で管理するので隠す）
+  if(mangaExtra)mangaExtra.style.display=(toolKey==='manga')?'':'none';
+  // rotary専用欄
+  const rotaryExtra=document.getElementById('p-rotary-extra');
+  if(rotaryExtra)rotaryExtra.style.display=(toolKey==='rotary')?'':'none';
+  // 農具幅行: manga/rotaryは専用欄で管理するので隠す
   const wRow=document.getElementById('p-w-row');
-  if(wRow)wRow.style.display=(sel&&sel.value==='manga')?'none':'';
+  if(wRow)wRow.style.display=(toolKey==='manga'||toolKey==='rotary')?'none':'';
   pc();
 }
 
@@ -923,6 +926,13 @@ function padPanels(){
 <div class="fld"><label>耕深 / Working Depth (cm)</label><input type="number" id="mn-d" value="20" min="5" max="35" onchange="pc()" oninput="pc()"></div>
 <div class="fld"><label>移動速度 / Speed (m/s)</label><div class="rr"><input type="range" id="mn-v" min="0.5" max="1.2" step="0.05" value="0.8" oninput="document.getElementById('mn-vo').textContent=this.value+' m/s';pc()"><span class="rv" id="mn-vo">0.80 m/s</span></div></div>
 <div class="fld"><label>泥の深さ / Mud Depth</label><select id="mn-mud" onchange="pc()" oninput="pc()"><option value="0.15">浅い / Shallow — くるぶし程度 (~10cm) f=0.15</option><option value="0.30" selected>中程度 / Mid — 脛中ほど (~25cm) f=0.30</option><option value="0.50">深い / Deep — 膝近く (~40cm) f=0.50</option></select></div>
+</div>
+<div id="p-rotary-extra" style="display:none">
+<div class="fld"><label>${S.lang==='ja'?'押さえつけ強度 / Press Load':'Press Load'}</label><select id="rt-press" onchange="pc()" oninput="pc()"><option value="5">${S.lang==='ja'?'弱 — 添えるだけ (5 kgf)':'Light — resting hand (5 kgf)'}</option><option value="15" selected>${S.lang==='ja'?'中 — 体重の一部 (15 kgf)':'Medium — partial bodyweight (15 kgf)'}</option><option value="25">${S.lang==='ja'?'強 — しっかり押し込む (25 kgf)':'Heavy — full press (25 kgf)'}</option></select></div>
+<div class="fld"><label>${S.lang==='ja'?'ディスク枚数 / Discs':'Discs'}</label><input type="number" id="rt-nd" value="6" min="2" max="12" onchange="pc()" oninput="pc()"></div>
+<div class="fld"><label>${S.lang==='ja'?'ディスク径 / Disc Dia. (cm)':'Disc Dia. (cm)'}</label><input type="number" id="rt-dia" value="30" min="15" max="60" onchange="pc()" oninput="pc()"></div>
+<div class="fld"><label>${S.lang==='ja'?'作業速度 / Speed (m/s)':'Work Speed (m/s)'}</label><div class="rr"><input type="range" id="rt-v" min="0.4" max="1.0" step="0.05" value="0.6" oninput="document.getElementById('rt-vo').textContent=this.value+' m/s';pc()"><span class="rv" id="rt-vo">0.60 m/s</span></div></div>
+<div class="fld"><label>${S.lang==='ja'?'泥の深さ / Mud Depth':'Mud Depth'}</label><select id="rt-mud" onchange="pc()" oninput="pc()"><option value="0.15">${S.lang==='ja'?'浅い（~10 cm）f=0.15':'Shallow (~10 cm) f=0.15'}</option><option value="0.30" selected>${S.lang==='ja'?'中程度（~25 cm）f=0.30':'Mid (~25 cm) f=0.30'}</option><option value="0.50">${S.lang==='ja'?'深い（~40 cm）f=0.50':'Deep (~40 cm) f=0.50'}</option></select></div>
 </div>
 </div>
 <div class="sec-lbl">${t('area_sec')}</div><div class="ic">
@@ -1021,6 +1031,130 @@ ${peakWarn?`<div class="dangerbox">${S.lang==='ja'?'⚠ 閉塞フェーズ牽引
 </div>`;
     r.innerHTML=badgeHtml+metricsHtml+phaseHtml+eHtml;
     const e=document.getElementById('pe2');if(e)e.innerHTML=envCard(wkJ*days);
+    return;
+  }
+
+  // ── rotary専用計算ブランチ ────────────────────────────────────
+  if(tl.rotary_model){
+    // 入力
+    const rt_press=num('rt-press',15);   // 手押し荷重 kgf
+    const rt_nd=num('rt-nd',6);          // ディスク枚数
+    const rt_dia=num('rt-dia',30);       // ディスク径 cm
+    const rt_v=num('rt-v',0.6);          // 速度 m/s
+    const fmud_rt=parseFloat(v('rt-mud')||'0.30'); // 泥質係数
+
+    // 道具自重 = 8 kgf（代表値: <10 kg）
+    const W_tool=8;
+    const W_total=W_tool+rt_press;       // 総垂直荷重 kgf
+
+    // ── テラメカニクス: フェーズ別貫入深（実態に即した修正モデル）──
+    // 実態: 塊のときはディスクが弾かれて浅い。粘性が出てきたとき初めて
+    //       ディスクが吸い込まれ、人が押さえ込める → 抵抗ピークは中〜後期
+    const tanPhi=Math.tan(5*Math.PI/180); // 0.0875
+    const c_cohesion=0.015;              // kgf/cm²
+    // 手押し強度別の「最大」貫入深（粘性フェーズで全効き）
+    const d_pen_max=rt_press<=5?2:rt_press<=15?4:6; // cm
+    // フェーズ別貫入深: 塊=浅い(固定1cm)、粘性=中間、液状化=最大
+    const d_pen_A=1;                          // 塊: 弾かれる・滑る
+    const d_pen_B=Math.round(d_pen_max*0.6);  // 粘性: 吸い込まれ始め
+    const d_pen_C=d_pen_max;                  // 液状化: 沈み込む・全効き
+
+    // フェーズ別 投影面積・テラメカニクス抵抗
+    const A_total_A=(rt_dia/2)*d_pen_A*rt_nd;
+    const A_total_B=(rt_dia/2)*d_pen_B*rt_nd;
+    const A_total_C=(rt_dia/2)*d_pen_C*rt_nd;
+    const D_press_A=W_total*tanPhi + c_cohesion*A_total_A; // 塊: 軽い
+    const D_press_B=W_total*tanPhi + c_cohesion*A_total_B; // 粘性: 中
+    const D_press_C=W_total*tanPhi + c_cohesion*A_total_C; // 液状化: 重い
+
+    // ── ASABE D497 ディスクハロー基準牽引力 ─────────────────────
+    const asabe_per_cm=0.17;             // kgf/cm (中間値)
+    const D_asabe=asabe_per_cm*rt_dia*rt_nd*0.4; // 液状化補正×0.4
+
+    // ── 造波抵抗（液状化後期で支配的） ────────────────────────
+    const rho_mud=0.00133;
+    const v_cm=rt_v*100;
+    // 正面投影面積もフェーズ別貫入深に連動
+    const D_wave_B=0.3*rho_mud*v_cm*v_cm*(rt_dia*d_pen_B*rt_nd)/1000;
+    const D_wave_C=0.3*rho_mud*v_cm*v_cm*(rt_dia*d_pen_C*rt_nd)/1000;
+
+    // ── 3フェーズ合計牽引力（フェーズC が最重） ────────────────
+    // A(塊):    貫入浅・破砕支配・造波なし → 軽い
+    // B(粘性):  貫入中・粘着+造波 → 中程度
+    // C(液状化): 貫入最大・沈み込み+造波支配 → 最重（手押し全効き）
+    const D_A=D_press_A + D_asabe*0.6;                      // 塊
+    const D_B=D_press_B + D_asabe*1.0 + D_wave_B*1.0;       // 粘性
+    const D_C=D_press_C + D_asabe*0.8 + D_wave_C*2.0;       // 液状化・最重
+
+    // 自己歩行抵抗（水田）
+    const R_self_rt=bw*nh*fmud_rt;      // kgf
+
+    // 総牽引力（各フェーズ）
+    const Dtot_A=D_A+R_self_rt;
+    const Dtot_B=D_B+R_self_rt;
+    const Dtot_C=D_C+R_self_rt;
+
+    // 馬の能力
+    const F_normal_rt=bw*nh*0.12;
+    const F_max_rt=bw*nh*0.8;
+
+    // 負荷ステータス（最重フェーズC基準で判定）
+    let statusJa,statusEn,statusColor;
+    if(Dtot_C<F_normal_rt){
+      statusJa='【快適】持続作業が可能';statusEn='[Comfortable] Sustainable';statusColor='var(--ok)';
+    } else if(Dtot_C<F_normal_rt*1.5){
+      statusJa='【高負荷】頻繁な休憩が必要';statusEn='[High Load] Frequent rest needed';statusColor='var(--warn)';
+    } else {
+      statusJa='【過負荷】作業困難・馬が嫌がる可能性';statusEn='[Overloaded] Horse may refuse';statusColor='var(--danger)';
+    }
+
+    // 液状化フェーズが常用の1.8倍超えるか（手押し効率アドバイス用）
+    const pressWarn=Dtot_C > F_normal_rt*1.8;
+
+    // 作業量（フェーズBを常用値とする）
+    const spad_rt=Math.max(op.sp*(1-wd/100*op.wm*0.5)*0.8,20); // 代かき速度
+    const wcm_rt=num('p-w',60);
+    const ahr_rt=(spad_rt*60*(wcm_rt/100)*op.fe*nh)/100;
+    const aday_rt=(ahr_rt*wh)/(op.passes||1),days_rt=area/aday_rt;
+
+    // エネルギー（泥中歩行 fmud → 倍率、フェーズBベース）
+    const eFactor_rt=fmud_rt<=0.15?2.5:fmud_rt<=0.30?3.5:6.5;
+    const pw_rt=Dtot_B*9.81*(spad_rt/60);
+    const wkJ_rt=pw_rt*wh*3.6*eFactor_rt;
+    const de_maint_rt=0.0333*bw*nh;
+    const de_total_rt=0.0333*bw*nh*(DEM[op.wt]||1.60)*wef(wd)*eFactor_rt;
+    const de_work_rt=de_total_rt-de_maint_rt;
+
+    // ── 結果表示 ────────────────────────────────────────────────
+    const r=document.getElementById('pr2');if(!r)return;
+    const badgeHtml_rt=`<div style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:8px;background:var(--warn)15;border:1px solid var(--warn)40;margin-bottom:8px"><span style="color:var(--warn);font-weight:700;font-family:var(--ffm);font-size:12px">${S.lang==='ja'?'信頼度 B — テラメカニクス+レオロジー推計モデル（実測フィードバック求む）':'Confidence B — Terramechanics + Rheology model (field feedback needed)'}</span></div>`;
+
+    const phaseHtml_rt=`
+<div class="sec-lbl">${S.lang==='ja'?'回転式代かき機 牽引抵抗（フェーズ別）':'Rotary Disc Puddler — Draft by Phase'}</div><div class="rc">
+<div class="dr"><span>${S.lang==='ja'?'① 塊フェーズ — 弾かれる・滑る（貫入 '+d_pen_A+' cm）':'① Clod Phase — bouncing/sliding (pen. '+d_pen_A+' cm)'}</span><span class="dv" style="color:var(--ok);font-weight:700">${D_A.toFixed(0)} + ${R_self_rt.toFixed(0)} = <b>${Dtot_A.toFixed(0)} kgf</b></span></div>
+<div class="dr"><span>${S.lang==='ja'?'② 粘性フェーズ — 吸い込まれ始める（貫入 '+d_pen_B+' cm）':'② Viscous Phase — disc sinking in (pen. '+d_pen_B+' cm)'}</span><span class="dv" style="color:var(--warn);font-weight:700">${D_B.toFixed(0)} + ${R_self_rt.toFixed(0)} = <b>${Dtot_B.toFixed(0)} kgf</b></span></div>
+<div class="dr"><span>${S.lang==='ja'?'③ 液状化フェーズ — 沈み込む・手押し全効き（貫入 '+d_pen_C+' cm）':'③ Fluid Phase — full sink, max press (pen. '+d_pen_C+' cm)'}</span><span class="dv" style="color:var(--danger);font-weight:700">${D_C.toFixed(0)} + ${R_self_rt.toFixed(0)} = <b>${Dtot_C.toFixed(0)} kgf</b></span></div>
+<div class="dr" style="font-size:12px;color:var(--text3)"><span>${S.lang==='ja'?'道具抵抗 + 自己歩行抵抗（f='+fmud_rt+'）':'Tool drag + locomotion (f='+fmud_rt+')'}</span></div>
+<div class="dr mt6"><span>${S.lang==='ja'?'貫入深（最大 / 液状化時）':'Max penetration depth (fluid phase)'}</span><span class="dv">${d_pen_C} cm</span></div>
+<div class="dr"><span>${S.lang==='ja'?'ディスク投影面積（液状化時）':'Disc projected area (fluid phase)'}</span><span class="dv">${A_total_C.toFixed(0)} cm²</span></div>
+<div class="dr"><span>${S.lang==='ja'?'常用牽引力 (12% BW×'+nh+'頭)':'Sustained Pull (12% BW×'+nh+')'}</span><span class="dv">${F_normal_rt.toFixed(0)} kgf</span></div>
+<div style="margin-top:10px;padding:9px 12px;border-radius:8px;background:${statusColor}15;border:1px solid ${statusColor}50;font-weight:700;color:${statusColor}">${S.lang==='ja'?statusJa:statusEn}</div>
+${pressWarn?`<div class="dangerbox" style="margin-top:8px">${S.lang==='ja'?'⚠ 塊がある間は手押しが必要ですが、これにより馬の牽引抵抗は推計で約 1.8 倍に跳ね上がります。馬の歩様が乱れる場合は、無理に押し込まず往復回数で調整してください。':'⚠ Hand pressure is needed while clods remain, but this raises estimated draft by ~1.8×. If the horse\'s gait becomes irregular, ease the press and add passes instead.'}</div>`:''}
+<div class="note mt6">${S.lang==='ja'?'ASABE D497 ディスクハロー基準値 × 液状化補正0.4 / テラメカニクス（Bekker 1960, Reece 1965）流用 / 造波抵抗: 船舶工学 Froude則 流用':'ASABE D497 disc harrow baseline × liquefaction factor 0.4 / Terramechanics (Bekker 1960, Reece 1965) / Wave-making: Froude ship resistance analogy'}</div>
+</div>`;
+
+    const metricsHtml_rt=`<div class="rg"><div class="met"><div class="ml">${S.lang==='ja'?'中期牽引力':'Mid-Phase Draft'}</div><div class="mv">${Dtot_B.toFixed(0)}</div><div class="mu">kgf</div></div><div class="met"><div class="ml">${t('ahr')}</div><div class="mv">${ahr_rt.toFixed(1)}</div><div class="mu">a/h</div></div><div class="met"><div class="ml">${t('aday')}</div><div class="mv">${aday_rt.toFixed(1)}</div><div class="mu">a/day</div></div><div class="met"><div class="ml">${t('dneed')}</div><div class="mv">${days_rt.toFixed(1)}</div><div class="mu">日</div></div></div>`;
+
+    const eHtml_rt=`<div class="sec-lbl">${t('wkenergy')}</div><div class="rc mt8">
+<div class="dr"><span>${S.lang==='ja'?'泥中歩行エネルギー倍率':'Mud Walking Energy Factor'}</span><span class="dv">×${eFactor_rt.toFixed(1)}</span></div>
+<div class="dr"><span>${t('wday')}</span><span class="dv">${(wkJ_rt/1000).toFixed(2)} MJ/日</span></div>
+<div class="dr"><span>${t('maint')}</span><span class="dv">${de_maint_rt.toFixed(1)} Mcal DE/日</span></div>
+<div class="dr"><span>${t('work_e')}</span><span class="dv">+${de_work_rt.toFixed(1)} Mcal</span></div>
+<div class="dr"><span>${t('de_total')}</span><span class="dv">${de_total_rt.toFixed(1)} Mcal DE/日</span></div>
+</div>`;
+
+    r.innerHTML=badgeHtml_rt+metricsHtml_rt+phaseHtml_rt+eHtml_rt;
+    const e=document.getElementById('pe2');if(e)e.innerHTML=envCard(wkJ_rt*days_rt);
     return;
   }
   // ── 従来ロジック（manga以外）────────────────────────────────
@@ -1477,6 +1611,40 @@ f_mud=0.15 → ×2.5、f_mud=0.30 → ×3.5、f_mud=0.50 → ×6.5
 （平地歩行=1.0 基準、HANDOVER記載値）
 
 物理推計モデル / 出典: 信頼度B — 実測フィードバック求む</div></div>`},
+    {tab:{ja:'回転式代かき機モデル',en:'Rotary Disc Model'},
+     html:`<div class="dbsec"><h3>回転式代かき機 牽引抵抗 計算ロジック</h3>
+<table class="dbt"><thead><tr><th>変数</th><th>記号</th><th>値・範囲</th><th>根拠</th></tr></thead><tbody>
+<tr><td>道具自重</td><td>W_tool</td><td>8 kgf</td><td>代表値 &lt;10 kg</td></tr>
+<tr><td>手押し荷重</td><td>W_press</td><td>5/15/25 kgf</td><td>体重の1/4〜1/3、弱/中/強</td></tr>
+<tr><td>土壌内部摩擦角</td><td>φ</td><td>5°（tan=0.087）</td><td>水田泥（液状化近傍）</td></tr>
+<tr><td>土壌粘着力</td><td>c</td><td>0.015 kgf/cm²</td><td>1.5 kPa 代かき後水田</td></tr>
+<tr><td>ASABE単位幅牽引力</td><td>—</td><td>0.17 kgf/cm</td><td>ASABE D497 中間値×液状化補正0.4</td></tr>
+<tr><td>造波抵抗係数</td><td>k_wave</td><td>0.30</td><td>Froude則 船舶工学流用</td></tr>
+<tr><td>泥の密度</td><td>ρ</td><td>1.3 g/cm³</td><td>代かき後水田泥 標準値</td></tr>
+</tbody></table>
+<div class="dbnote">【テラメカニクス牽引抵抗式（Bekker 1960 / Reece 1965）】
+D_press = (W_tool + W_press) × tan(φ) + c × A_total
+A_total = (ディスク径/2) × 貫入深 × 枚数
+貫入深: 弱=2cm / 中=4cm / 強=6cm
+
+【ASABE D497 ディスクハロー基準】
+D_asabe = 0.17 kgf/cm × ディスク径 × 枚数 × 0.4（液状化補正）
+
+【チキソトロピー3フェーズ】
+フェーズA（塊・閉塞）: D_press×1.0 + D_asabe×1.0 + D_wave×0.0
+フェーズB（粘性遷移）: D_press×0.5 + D_asabe×0.7 + D_wave×1.0
+フェーズC（液状化）  : D_press×0.1 + D_asabe×0.3 + D_wave×2.0
+
+【造波抵抗（船舶工学 Froude則流用）】
+D_wave = k_wave × ρ × v² × A_front / 1000
+A_front = ディスク径 × 貫入深 × 枚数
+
+【合計牽引力】
+D_total = D_phase + W_horse × f_mud（自己歩行抵抗）
+
+【手押し効果】
+強押し(25kgf): 貫入深2→6cm、牽引抵抗推計 約1.8倍増
+馬の歩様乱れ時は押し込みをやめ往復回数で調整のこと</div></div>`},
     {tab:{ja:'歩行抵抗モデル',en:'Locomotion Model'},
      html:`<div class="dbsec"><h3>地面条件別 自己歩行抵抗 計算ロジック</h3>
 <table class="dbt"><thead><tr><th>地面条件</th><th>係数</th><th>エネルギー倍率</th><th>追加牽引力 (500 kg馬)</th></tr></thead><tbody>
@@ -1662,7 +1830,7 @@ const GUIDE={
     {
       sel:null,
       step:'4 / 6',
-      text:'計算機に入ると、画面上部に<strong>タブ</strong>が表示されます。「設定 → 計算結果 → 環境レポート」の順に並んでいます。<strong>左右スワイプ</strong>でも切り替えられます。',
+      text:'計算機に入ると、<strong>メニュー名の下にタブ</strong>が表示されます。「設定 → 計算結果 → 環境レポート」の順です。タブをタップするか、<strong>左右スワイプ</strong>で切り替えられます。',
       img:'tab'
     },
     {
@@ -1698,7 +1866,7 @@ const GUIDE={
     {
       sel:null,
       step:'4 / 6',
-      text:'Inside each calculator, <strong>tabs</strong> appear at the top: Setup → Results → Env. Report. You can also <strong>swipe left / right</strong> to switch between them.',
+      text:'Inside each calculator, <strong>tabs appear just below the menu title</strong>: Setup → Results → Env. Report. Tap a tab or <strong>swipe left / right</strong> to switch.',
       img:'tab'
     },
     {
