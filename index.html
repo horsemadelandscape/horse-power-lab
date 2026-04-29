@@ -606,6 +606,13 @@ function onDiskTypeChange(){
   const diskType_=document.getElementById('f-disk-type')?.value||'single';
   const rr=document.getElementById('f-disk-rear-row');
   if(rr)rr.style.display=diskType_==='tandem'?'':'none';
+  // シングル→タンデム切替時にnrを前列枚数の半数にリセット（古い値の引継ぎを防ぐ）
+  if(diskType_==='tandem'){
+    const nfEl=document.getElementById('f-disk-nf');
+    const nrEl=document.getElementById('f-disk-nr');
+    if(nrEl&&nfEl)nrEl.value=Math.round((parseInt(nfEl.value)||8)/2);
+  }
+  fc();
 }
 function onPhaseChange(){
   const phase=v('f-phase')||'weed';
@@ -661,6 +668,8 @@ function onImplChange(){
     diskRow.style.display=key==='disc_harrow'?'':'none';
     if(key==='disc_harrow'){wRow&&(wRow.style.display='none');}
   }
+  const sthRow=document.getElementById('f-sth-row');
+  if(sthRow){sthRow.style.display=key==='spring_tooth'?'':'none';}
   const rcultivRow=document.getElementById('f-rcultiv-row');
   if(rcultivRow){rcultivRow.style.display=key==='riding_cultiv'?'':'none';}
   const spikeRow=document.getElementById('f-spike-row');
@@ -695,6 +704,8 @@ function openHF(i){
 }
 function closeHM(){document.getElementById('hmo').classList.remove('op');}
 function saveH(){
+  // breed: 現在は体重初期値の衰引のみに使用。
+  // 将来拡張予定：品種ごとの作業速度・歩幅・吸気消費の平均値など（実測データ蓄積待ち）
   const h={name:document.getElementById('hn').value||'Horse',breed:document.getElementById('hb').value,
     weight:parseInt(document.getElementById('hw').value)||650,age:parseInt(document.getElementById('ha').value)||8,
     train:document.getElementById('htr').value||'worker'};
@@ -752,12 +763,12 @@ function getCalcBW(calcId){
 //   teamBurst : チーム瞬間最大 [kgf]（80%BW×cap_f の合計）
 //   cap0      : 1頭目cap_f（道具抵抗側の基準に使う）
 // 3頭対応: calcId='l'のみ nh=3まで対応。未選択頭はデフォルト体重650で計算。
-function getTeamStats(calcId, nh){
+function getTeamStats(calcId, nh, bwInput){
   let totalBW=0, teamPlo=0, teamPhi=0, teamEff=0, teamBurst=0;
   const cap0=getHorseCap(calcId,0);
   for(let i=0;i<nh;i++){
     const h=getHorseObj(calcId,i);
-    const bwi=h?h.weight:650; // 未選択時はデフォルト650kg
+    const bwi=h?h.weight:(bwInput||650); // 登録馬優先・未選択時はUI入力値を使用
     const capi=getHorseCap(calcId,i);
     totalBW+=bwi;
     teamPlo+=bwi*0.10*capi;
@@ -767,6 +778,43 @@ function getTeamStats(calcId, nh){
   }
   return {totalBW,teamPlo,teamPhi,teamEff,teamBurst,cap0};
 }
+// ── 若齢馬警告（馬の福祉）────────────────────────────────────────
+// 2歳以下: 骨格・関節への影響が確実なため作業は非推奨（dangerbox）
+// 3歳: 作業は推奨しない。トレーニング目的なら軽作業・短時間限定（warnbox）
+// 登録馬がいる場合のみ判定。未登録（デフォルト体重のみ）は年齢不明のため対象外。
+function getYoungHorseWarn(calcId, nh){
+  const ja=S.lang!=='en';
+  let minAge=null;
+  let youngNames=[];
+  for(let i=0;i<nh;i++){
+    const h=getHorseObj(calcId,i);
+    if(!h)continue; // 未登録馬は対象外
+    const age=h.age||8;
+    if(minAge===null||age<minAge)minAge=age;
+    if(age<=3)youngNames.push(h.name||('Horse '+(i+1)));
+  }
+  if(minAge===null||minAge>3)return ''; // 警告不要
+  const nameStr=youngNames.join('・');
+  if(minAge<=2){
+    return '<div class="dangerbox mt8">'
+      +'<b>'+(ja?'⚠ 2歳以下の馬への作業':'⚠ Horse aged 2 or under')+'</b><br>'
+      +'<span style="font-size:13px;line-height:1.8">'
+      +(ja
+        ? nameStr+'は骨格・関節が未成熟です。この年齢での作業は骨格・靭帯への恒久的なダメージを引き起こす可能性があります。<b>作業は行わないことを強く推奨します。</b>'
+        : nameStr+' has an immature skeleton and joints. Work at this age risks permanent damage to bones and ligaments. <b>Working is strongly discouraged.</b>')
+      +'</span></div>';
+  } else {
+    // minAge===3
+    return '<div class="warnbox mt8">'
+      +'<b>'+(ja?'⚠ 3歳馬への作業':'⚠ 3-year-old horse')+'</b><br>'
+      +'<span style="font-size:13px;line-height:1.8">'
+      +(ja
+        ? nameStr+'は成長段階にあり、作業は推奨しません。トレーニング目的であれば、<b>軽作業・短時間（30分以内）</b>にとどめ、馬の疲労・歩様・姿勢を常に観察してください。'
+        : nameStr+' is still developing. Work is not recommended. If for training purposes, limit to <b>light work and short sessions (under 30 min)</b>, and monitor gait and posture closely.')
+      +'</span></div>';
+  }
+}
+
 
 // 馬選択セレクトボックス生成（共通・3頭対応）
 function buildHorseSelector(calcId,pos,calcFn,bwId){
@@ -939,6 +987,7 @@ function loadBar(pct,extraWarn,mode){
   // 5段階判定（PDF準拠: 40/65/85/110/%）
   const c=pct<=40?'var(--ok)':pct<=65?'#7cb518':pct<=85?'var(--warn)':pct<=110?'var(--danger)':'#8b0000';
   const vc=pct<=40?'vok':pct<=65?'vok':pct<=85?'vwn':pct<=110?'vdg':'vdg';
+  const ja=S.lang!=='en';
   const MSG={
     ok1:{ja:'Lv.1 — 非常に楽。継続作業も十分可能',en:'Lv.1 — Very easy. Sustained work is fine'},
     ok2:{ja:'Lv.2 — 適切な労働。休憩と水分補給を',en:'Lv.2 — Appropriate load. Rest & water regularly'},
@@ -946,14 +995,20 @@ function loadBar(pct,extraWarn,mode){
     wn_log:{ja:'Lv.3 — 重労働。こまめな休憩が必須',en:'Lv.3 — Heavy work. Frequent rest required'},
     wn_gd:{ja:'Lv.3 — 重労働。こまめな休憩が必須',en:'Lv.3 — Heavy work. Frequent rest required'},
     dg:{ja:'Lv.4 — 過酷。常に馬の状態を観察すること',en:'Lv.4 — Severe. Monitor horse condition closely'},
-    dg2:{ja:'Lv.5 — 危険。この条件での作業は行わないこと',en:'Lv.5 — Dangerous. Do not work under these conditions'},
+    // Lv.5: vtextは簡潔に、詳細はdangerboxで表示（重複防止）
+    dg2_short:{ja:'Lv.5 — 危険',en:'Lv.5 — Dangerous'},
+    dg2_box:{
+      ja:'この条件での作業は行わないこと。または、この作業は馬にとって持続可能ではないと考えられます。頭数を増やすか、積載量を減らしてください。',
+      en:'Do not work under these conditions — or consider that this task may not be sustainable for the horse. Increase team size or reduce load.'
+    },
   };
   const mkey=mode||'tillage';
-  let vtext=pct<=40?MSG.ok1[S.lang||'ja']:pct<=65?MSG.ok2[S.lang||'ja']:pct<=85?MSG['wn_'+mkey]?.[S.lang||'ja']:pct<=110?MSG.dg[S.lang||'ja']:MSG.dg2[S.lang||'ja'];
+  // pct>110のときvtextは短縮版（dangerboxと重複しないよう）
+  let vtext=pct<=40?MSG.ok1[ja?'ja':'en']:pct<=65?MSG.ok2[ja?'ja':'en']:pct<=85?MSG['wn_'+mkey]?.[ja?'ja':'en']:pct<=110?MSG.dg[ja?'ja':'en']:MSG.dg2_short[ja?'ja':'en'];
   let warn='';
-  if(pct>110)warn=`<div class="dangerbox">${MSG.dg2[S.lang||'ja']}</div>`;
-  else if(pct>85)warn=`<div class="warnbox">${MSG.dg[S.lang||'ja']}</div>`;
-  else if(pct>65)warn=`<div class="warnbox">${MSG['wn_'+mkey]?.[S.lang||'ja']||MSG.wn_tillage[S.lang||'ja']}</div>`;
+  if(pct>110)warn=`<div class="dangerbox">${MSG.dg2_box[ja?'ja':'en']}</div>`;
+  else if(pct>85)warn=`<div class="warnbox">${MSG.dg[ja?'ja':'en']}</div>`;
+  else if(pct>65)warn=`<div class="warnbox">${MSG['wn_'+mkey]?.[ja?'ja':'en']||MSG.wn_tillage[ja?'ja':'en']}</div>`;
   if(extraWarn)warn+=`<div class="warnbox mt6">${extraWarn}</div>`;
   return `<div class="sec-lbl">${t('load')}</div><div class="rc"><div class="lsec"><div class="lhd"><span>${t('lr')}</span><span>${pct.toFixed(0)}%</span></div><div class="lbg"><div class="lbf" style="width:${Math.min(pct,100)}%;background:${c}"></div></div><span class="vd ${vc}">${vtext}</span></div>${warn}</div>`;
 }
@@ -1179,6 +1234,7 @@ ${buildHorseSelector('f',0,'fc','f-bw')}
 </select></div>
 <div id="f-rc-calc" style="font-size:12px;color:var(--text3);font-family:var(--ffm);line-height:1.8;padding:6px 8px;background:var(--bg2);border-radius:6px;margin-top:4px"></div>
 </div></div>
+<div class="fld" id="f-spike-row" style="display:none">
 <label>スパイクトゥース設定 / Spike-Tooth Config</label>
 <div style="margin-top:6px">
 <div style="margin-bottom:8px"><label style="font-size:12px">プリセット / Preset</label>
@@ -1200,12 +1256,15 @@ ${buildHorseSelector('f',0,'fc','f-bw')}
 </select></div>
 <div id="f-spike-calc" style="font-size:12px;color:var(--text3);font-family:var(--ffm);line-height:1.8;padding:6px 8px;background:var(--bg2);border-radius:6px;margin-top:4px"></div>
 </div></div>
+<div class="fld" id="f-disk-row" style="display:none">
+<label>ディスクハロー設定 / Disk Harrow Config</label>
+<div style="margin-top:6px">
 <div style="margin-bottom:6px"><select id="f-disk-preset" onchange="applyDiskPreset()" style="width:100%;padding:6px;border-radius:6px;border:1px solid var(--bd);background:var(--bg2);color:var(--text1);font-size:13px"><option value="">— プリセット / Preset —</option><option value="f16">Groffdale F16（3ft・1頭用・12"×16枚）</option><option value="s3ft">小型シングル（3ft・1頭）16"×4枚</option><option value="s6ft">標準シングル（6ft・2頭）20"×8枚</option><option value="t5ft">小型タンデム（5ft・2〜3頭）18"×4+4枚</option><option value="t6ft">標準タンデム（6ft・3頭）20"×4+4枚</option></select></div>
 <div style="display:flex;gap:8px;margin-bottom:6px"><label style="flex:1;font-size:12px">タイプ<br><select id="f-disk-type" onchange="onDiskTypeChange();fc()" style="width:100%;padding:5px;border-radius:6px;border:1px solid var(--bd);background:var(--bg2);color:var(--text1)"><option value="single">シングル</option><option value="tandem">タンデム</option></select></label><label style="flex:1;font-size:12px">ディスク径 / Dia.<br><select id="f-disk-dia" onchange="fc()" style="width:100%;padding:5px;border-radius:6px;border:1px solid var(--bd);background:var(--bg2);color:var(--text1)"><option value="12">12インチ</option><option value="16">16インチ</option><option value="18">18インチ</option><option value="20" selected>20インチ</option><option value="22">22インチ</option><option value="24">24インチ</option></select></label></div>
 <div style="display:flex;gap:8px;margin-bottom:6px"><label style="flex:1;font-size:12px">間隔 / Spacing<br><select id="f-disk-spacing" onchange="fc()" style="width:100%;padding:5px;border-radius:6px;border:1px solid var(--bd);background:var(--bg2);color:var(--text1)"><option value="7">7インチ</option><option value="8">8インチ</option><option value="9" selected>9インチ</option><option value="10">10インチ</option><option value="11">11インチ</option></select></label><label style="flex:1;font-size:12px">前列枚数 / Front<br><input type="number" id="f-disk-nf" value="8" min="2" max="24" onchange="fc()" oninput="fc()" style="width:100%;padding:5px;border-radius:6px;border:1px solid var(--bd);background:var(--bg2);color:var(--text1)"></label></div>
 <div id="f-disk-rear-row" style="display:none;margin-bottom:6px"><label style="font-size:12px">後列枚数 / Rear（タンデムのみ）<br><input type="number" id="f-disk-nr" value="4" min="2" max="24" onchange="fc()" oninput="fc()" style="width:100%;padding:5px;border-radius:6px;border:1px solid var(--bd);background:var(--bg2);color:var(--text1)"></label></div>
 <div id="f-disk-calc" style="font-size:12px;color:var(--text3);font-family:var(--ffm);line-height:1.8;padding:6px 8px;background:var(--bg2);border-radius:6px;margin-top:4px"></div>
-</div></div>
+</div></div></div>
 <div class="fld" id="f-tine-row" style="display:none"><label>爪数 / Tines</label><select id="f-tines" onchange="fc()" oninput="fc()"><option value="4" selected>4本（標準）</option><option value="6">6本（広幅）</option></select></div>
 <div class="fld" id="f-hilling-row" style="display:none"><label>排土板 / Hilling board</label><div style="display:flex;gap:8px;margin-top:4px"><button id="f-hilling-off" onclick="setHilling(false)" style="flex:1;padding:8px;border-radius:6px;border:2px solid var(--ok);background:var(--ok);color:#fff;font-weight:600;cursor:pointer;font-size:13px">なし / Off</button><button id="f-hilling-on" onclick="setHilling(true)" style="flex:1;padding:8px;border-radius:6px;border:2px solid var(--bd);background:var(--bg2);color:var(--text1);font-weight:600;cursor:pointer;font-size:13px">あり / On</button></div><div style="font-size:11px;color:var(--text3);margin-top:4px;font-family:var(--ffm)">幅35cm想定 / 抵抗が増加 / Increases draft</div></div>
 <div class="fld" id="f-wguide" style="font-size:12px;color:var(--text3);font-family:var(--ffm)"></div>
@@ -1220,7 +1279,7 @@ ${buildHorseSelector('f',0,'fc','f-bw')}
 
 function fc(){
   const bw=num('f-bw',650),nh=int_('f-nh',1),wh=num('f-wh',6);
-  const ts=getTeamStats('f',nh);
+  const ts=getTeamStats('f',nh,bw);
   const cap_f=ts.cap0;
   const impl=IMPL[v('f-impl')||'maburi'],sk=v('f-soil')||'m';
   const fe=num('f-fe',0.65),area=num('f-area',100);
@@ -1430,6 +1489,8 @@ ${fbMsg?`<span style="color:${tc[tr]};font-size:11px;font-family:var(--ffm)">${f
 <div class="met"><div class="ml">${t('dneed')}</div><div class="mv">${days.toFixed(1)}</div><div class="mu">${ja?'日':'days'}</div><div class="msub">${ja?'馬の能力と作業条件から算出。過負荷時は実際より長くなる':'Based on horse capacity. Longer when overloaded'}</div></div>
 </div>
 ${loadBar(pct,null,'tillage')}
+${getYoungHorseWarn('f',nh)}
+${paceChart(days,'f-wh','fc')}
 ${(()=>{
   // 推奨頭数カード: sulky_plow + spring_tooth + spike_tooth
   const showRec=['sulky_plow','spring_tooth','spike_tooth','riding_cultiv'].includes(implKey);
@@ -1449,20 +1510,21 @@ ${(()=>{
   const ja=S.lang!=='en';
   const rowsHtml=rows.map(r=>{
     const isRec=r===recRow;
-    const label=ja?`${r.n}頭`:`${r.n} horse${r.n>1?'s':''}`;
+    const label=ja?(r.n+'頭'):(r.n+(r.n>1?' horses':' horse'));
     const mark=r.lv===1?(ja?'余裕あり':'ample'):r.lv===2?(ja?'適正':'optimal'):r.lv===3?(ja?'重労働':'hard'):r.lv===4?(ja?'過酷':'severe'):(ja?'危険':'danger');
-    return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--bd)20">
-<span style="font-weight:${isRec?700:400};font-family:var(--ffm);min-width:52px;color:${isRec?'var(--text1)':'var(--text2)'}">${label}</span>
-<div style="flex:1;background:var(--bg2);border-radius:4px;height:8px;overflow:hidden"><div style="height:100%;width:${Math.min(r.pctN,150).toFixed(0)}%;background:${r.lvColor};border-radius:4px;transition:width 0.3s"></div></div>
-<span style="font-family:var(--ffm);font-size:13px;min-width:42px;text-align:right;color:${r.lvColor}">${r.pctN.toFixed(0)}%</span>
-<span style="font-size:11px;color:${r.lvColor};min-width:44px">${isRec?'★ '+mark:mark}</span>
-</div>`;
+    const starMark=isRec?'★ '+mark:mark;
+    return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--bd)20">'
+      +'<span style="font-weight:'+(isRec?700:400)+';font-family:var(--ffm);min-width:52px;color:'+(isRec?'var(--text1)':'var(--text2)')+'">'+label+'</span>'
+      +'<div style="flex:1;background:var(--bg2);border-radius:4px;height:8px;overflow:hidden"><div style="height:100%;width:'+Math.min(r.pctN,150).toFixed(0)+'%;background:'+r.lvColor+';border-radius:4px;transition:width 0.3s"></div></div>'
+      +'<span style="font-family:var(--ffm);font-size:13px;min-width:42px;text-align:right;color:'+r.lvColor+'">'+r.pctN.toFixed(0)+'%</span>'
+      +'<span style="font-size:11px;color:'+r.lvColor+';min-width:44px">'+starMark+'</span>'
+      +'</div>';
   }).join('');
-  return `<div class="rc mt8" style="border:1px solid var(--ok)40;background:var(--ok)08">
-<h3 style="margin-bottom:8px">${ja?'推奨頭数':'Recommended Team Size'}</h3>
-<div style="font-size:12px;color:var(--text3);margin-bottom:8px;font-family:var(--ffm)">${ja?'★ = 推奨（負担率 41〜65%）':'★ = Recommended (load 41–65%)'}</div>
-${rowsHtml}
-</div>`;
+  return '<div class="rc mt8" style="border:1px solid var(--ok)40;background:var(--ok)08">'
+    +'<h3 style="margin-bottom:8px">'+(ja?'推奨頭数':'Recommended Team Size')+'</h3>'
+    +'<div style="font-size:12px;color:var(--text3);margin-bottom:8px;font-family:var(--ffm)">'+(ja?'★ = 推奨（負担率 41〜65%）':'★ = Recommended (load 41–65%)')+'</div>'
+    +rowsHtml
+    +'</div>';
 })()}
 ${condSummary}
 <div class="sec-lbl">${t('workq')}</div><div class="rc mt8">
@@ -1602,6 +1664,7 @@ ${buildHorseSelector('p',0,'pc','p-bw')}
 </div>
 </div>
 <div class="sec-lbl">${t('area_sec')}</div><div class="ic">
+<div class="fld"><label>${S.lang==='ja'?'圃場効率 / Field Efficiency':'Field Efficiency'}</label><select id="p-fe" onchange="pc()" oninput="pc()"><option value="0.45">0.45 — 狭小・不整形/Irregular</option><option value="0.52" selected>0.52 — 標準/Standard</option><option value="0.60">0.60 — 良好/Good</option><option value="0.68">0.68 — 広大整形/Large Regular</option></select><div style="font-size:12px;color:var(--text3);margin-top:5px;line-height:1.5">${S.lang==='en'?'Ratio of effective puddling time. Water paddy turns & tool-lift loss included.':'実質作業比率。旋回・農具上げ・停止を含む水田特有のロスを反映。'}</div></div>
 <div class="fld"><label>${t('area')}</label><input type="number" id="p-area" value="1" min="1" max="500" onchange="pc()" oninput="pc()"></div>
 <div class="fld" id="p-area-cv" style="font-size:14px;color:var(--text2);font-family:var(--ffm)"></div>
 
@@ -1611,7 +1674,7 @@ ${buildHorseSelector('p',0,'pc','p-bw')}
 
 function pc(){
   const bw=num('p-bw',500),nh=int_('p-nh',1),wh=num('p-wh',5);
-  const ts=getTeamStats('p',nh);
+  const ts=getTeamStats('p',nh,bw);
   const cap_f=ts.cap0;
   const op=POPS[v('p-op')||'wet'],sl=v('p-soil')||'loam';
   const wd=num('p-wd',10),wcm=num('p-w',20),area=num('p-area',30);
@@ -1669,7 +1732,7 @@ function pc(){
     const spad_mn=mn_v*60;
     // 作業幅 = 道具幅（p-w）を使用
     const ahr=(spad_mn*(mn_wcm/100)*op.fe*nh)/100;
-    const aday=(ahr*wh)/(op.passes||1),days=area/aday;
+    const aday=(ahr*wh)/(op.passes||1),days=area/Math.max(aday,0.001);
     // エネルギー（安定フェーズ出力ベース）
     const pw=drB_kgf*9.81*(spad_mn/60),wkJ=pw*wh*3.6*eFactor;
     const de_maint=0.0333*ts.totalBW;
@@ -1805,7 +1868,7 @@ ${peakWarn?`<div class="dangerbox">${S.lang==='ja'?'⚠ 閉塞フェーズ牽引
     const spad_rt=Math.max(op.sp*(1-wd/100*op.wm*0.5)*0.8,20); // 代かき速度
     const wcm_rt=num('p-w',60);
     const ahr_rt=(spad_rt*60*(wcm_rt/100)*op.fe*nh)/100;
-    const aday_rt=(ahr_rt*wh)/(op.passes||1),days_rt=area/aday_rt;
+    const aday_rt=(ahr_rt*wh)/(op.passes||1),days_rt=area/Math.max(aday_rt,0.001);
 
     // エネルギー（泥中歩行 fmud → 倍率、フェーズBベース）
     const eFactor_rt=fmud_rt<=0.15?2.5:fmud_rt<=0.30?3.5:6.5;
@@ -1860,7 +1923,7 @@ ${pressWarn?`<div class="dangerbox" style="margin-top:8px">${S.lang==='ja'?'⚠ 
 
   // ── rake（田均し角材）専用計算ブランチ ──────────────────────
   if(tl.rake_model){
-    const rk_rho=num('rk-sp',700);        // 木材密度 kg/m³
+    const rk_rho=num('rk-sp',440);        // 木材密度 kg/m³（UIデフォルト: ヒノキ440）
     const rk_len=parseFloat(v('rk-len')||'3.0'); // 長さ m
     const rk_sec=parseFloat(v('rk-sec')||'0.090'); // 断面 m
     const rk_v=num('rk-v',0.6);           // 速度 m/s
@@ -1919,7 +1982,7 @@ ${pressWarn?`<div class="dangerbox" style="margin-top:8px">${S.lang==='ja'?'⚠ 
     const spad_rk=Math.max(op.sp*(1-wd/100*op.wm*0.5),20);
     const ahr_rk=(spad_rk*60*(rk_len)*op.fe*nh)/100; // 作業幅=角材長さ
     const aday_rk=(ahr_rk*wh)/(op.passes||1);
-    const days_rk=area/aday_rk;
+    const days_rk=area/Math.max(aday_rk,0.001);
 
     // エネルギー
     const eFactor_rk=fmud_rk<=0.15?2.5:3.5;
@@ -1987,7 +2050,8 @@ ${pressWarn?`<div class="dangerbox" style="margin-top:8px">${S.lang==='ja'?'⚠ 
   // 実効速度: 過負荷時は持続可能牽引力の範囲で速度が落ちる
   const spRatio_p=dr>0?Math.min(effPull/dr,1.0):1.0;
   const spad=Math.max(op.sp*tl.sp_f*(1-wd/100*op.wm*0.5),20)*spRatio_p;
-  const ahr=(spad*60*(wcm/100)*op.fe*nh)/100,aday=(ahr*wh)/(op.passes||1),days=area/Math.max(aday,0.001);
+  const fe_p=parseFloat(document.getElementById('p-fe')?.value||op.fe)||op.fe;
+  const ahr=(spad*60*(wcm/100)*fe_p*nh)/100,aday=(ahr*wh)/(op.passes||1),days=area/Math.max(aday,0.001);
   const pct=dr/Math.max(effPull,0.001)*100;
   // 乾田エネルギー補正: ×1.2 (硬地歩行, HANDOVER記載)
   const dryEFactor=isDry?1.2:1.0;
@@ -2004,13 +2068,13 @@ ${pressWarn?`<div class="dangerbox" style="margin-top:8px">${S.lang==='ja'?'⚠ 
   const opLabel_p=POPS[v('p-op')||'wet']?.[S.lang==='en'?'en':'ja']||'';
   const tlLabel_p=PTOOL[v('p-tool')||'maburi']?.[S.lang==='en'?'en':'ja']||'';
   const soilLabel_p={'clay':S.lang==='en'?'Clay':'粘土','loam':S.lang==='en'?'Loam':'壌土','sand':S.lang==='en'?'Sandy':'砂質'}[sl]||sl;
-  const feLabel_p=v('p-fe')||op.fe;
+  const feLabel_p=fe_p;
   const ja_p=S.lang!=='en';
   const condSummary_p=`<div style="font-size:12px;color:var(--text2);line-height:1.8;margin-top:8px;padding:8px 10px;background:var(--bg2);border-radius:var(--rs)">
 <b>${ja_p?'入力条件':'Conditions'}</b><br>
 ${ja_p?'作業時間':'Working hours'}: ${num('p-wh',5)} h／${ja_p?'面積':'Area'}: ${num('p-area',30)} a<br>
 ${ja_p?'作業種類':'Operation'}: ${opLabel_p}／${ja_p?'農具':'Implement'}: ${tlLabel_p}<br>
-${ja_p?'土壌':'Soil'}: ${soilLabel_p}／${ja_p?'農具幅':'Width'}: ${wcm} cm／${ja_p?'圃場効率':'Field eff.'}: ${op.fe}
+${ja_p?'土壌':'Soil'}: ${soilLabel_p}／${ja_p?'農具幅':'Width'}: ${wcm} cm／${ja_p?'圃場効率':'Field eff.'}: ${feLabel_p}
 </div>`;
 
   // Water depth visualization (水田作業のみ)
@@ -2050,7 +2114,8 @@ ${ja_p?'土壌':'Soil'}: ${soilLabel_p}／${ja_p?'農具幅':'Width'}: ${wcm} cm
 <div class="met"><div class="ml">${t('dneed')}</div><div class="mv">${days.toFixed(1)}</div><div class="mu">${ja_p?'日':'days'}</div><div class="msub">${ja_p?'馬の能力と作業条件から算出':'Based on horse capacity'}</div></div>
 </div>
 ${loadBar(pct,null,'tillage')}
-${condSummary_p}
+${getYoungHorseWarn('p',nh)}
+${paceChart(days,'p-wh','pc')}
 ${dryResistHtml}
 ${isDry?'':`<div class="sec-lbl">${S.lang==='ja'?'水深による負荷可視化':'Water Depth — Load Factor Visualization'}</div><div class="rc mt8">
 <div class="wvis">${waterVisHtml}</div>
@@ -2186,8 +2251,8 @@ const RHONAMES={
 function logPanels(){
   const bw=getCalcBW('l');
   const cap_f=getHorseCap('l');
-  const toolOpts=Object.entries(TOOLS).map(([k,t_])=>`<option value="${k}">${S.lang==='ja'?t_.ja:t_.en}</option>`).join('');
-  const spOpts=Object.entries(RHONAMES).map(([k,n])=>`<option value="${k}">${n}</option>`).join('');
+  const toolOpts=Object.entries(TOOLS).map(([k,t_])=>`<option value="${k}"${k==='tg_sod'?' selected':''}>${S.lang==='ja'?t_.ja:t_.en}</option>`).join('');
+  const spOpts=Object.entries(RHONAMES).map(([k,n])=>`<option value="${k}"${k==='karamatsu'?' selected':''}>${n}</option>`).join('');
   const p0=`<div class="sec-lbl">${t('ps')}</div><div class="ic">
 ${buildHorseSelector('l',0,'lc','l-bw')}
 <div class="fld"><label>${t('bw')}</label><input type="number" id="l-bw" value="${bw}" min="200" max="1200" onchange="lc()" oninput="lc()"></div>
@@ -2197,9 +2262,9 @@ ${buildHorseSelector('l',0,'lc','l-bw')}
 </div>
 <div class="sec-lbl">${t('logset')}</div><div class="ic">
 <div class="fld"><label>${t('sp')}</label><select id="l-sp" onchange="lc()" oninput="lc()">${spOpts}</select></div>
-<div class="fld"><label>${t('ll')}</label><input type="number" id="l-len" value="4" min="0.5" max="20" step="0.1" onchange="lc()" oninput="lc()"></div>
-<div class="fld"><label>${t('ds')}</label><input type="number" id="l-ds" value="22" min="5" max="120" onchange="lc()" oninput="lc()"></div>
-<div class="fld"><label>${t('dl')}</label><input type="number" id="l-dl" value="32" min="5" max="150" onchange="lc()" oninput="lc()"></div>
+<div class="fld"><label>${t('ll')}</label><input type="number" id="l-len" value="3" min="0.5" max="20" step="0.1" onchange="lc()" oninput="lc()"></div>
+<div class="fld"><label>${t('ds')}</label><input type="number" id="l-ds" value="30" min="5" max="120" onchange="lc()" oninput="lc()"></div>
+<div class="fld"><label>${t('dl')}</label><input type="number" id="l-dl" value="35" min="5" max="150" onchange="lc()" oninput="lc()"></div>
 <div class="fld"><label>${t('nl')}</label><input type="number" id="l-nl" value="1" min="1" max="5" onchange="lc()" oninput="lc()"></div>
 </div>
 <div class="sec-lbl">${t('terrset')}</div><div class="ic">
@@ -2215,7 +2280,7 @@ ${buildHorseSelector('l',0,'lc','l-bw')}
 <div style="font-size:11px;color:var(--text3);margin-top:3px" id="l-sled-wt-hint">${S.lang!=='en'?'ゴーデビル目安20〜40kg / バチバチ橇80〜120kg（前後2台）':'Go-devil 20–40kg / Bachibachi sled 80–120kg (front+rear)'}</div>
 </div>
 <div class="fld"><label>${t('slope')}</label><div class="rr"><input type="range" id="l-sl" min="-30" max="50" step="1" value="0" oninput="document.getElementById('lslo').textContent=(parseInt(this.value)>0?'+':'')+this.value+'%';lc()"><span class="rv" id="lslo">0%</span></div></div>
-<div class="fld"><label>${t('dist')}</label><input type="number" id="l-dist" value="100" min="10" max="2000" onchange="lc()" oninput="lc()"></div>
+<div class="fld"><label>${t('dist')}</label><input type="number" id="l-dist" value="50" min="10" max="2000" onchange="lc()" oninput="lc()"></div>
 <div class="fld"><label>${S.lang!=='en'?'作業速度（積載時）':'Working speed (loaded)'}</label>
 <div class="rr"><input type="range" id="l-spd" min="0.4" max="2.0" step="0.1" value="1.0" oninput="document.getElementById('lspdo').textContent=parseFloat(this.value).toFixed(1)+' m/s';lc()"><span class="rv" id="lspdo">1.0 m/s</span></div>
 <div style="font-size:11px;color:var(--text3);margin-top:3px">▲ ${S.lang!=='en'?'並足（常歩）目安 1.0 m/s — Perez et al. (1992) 林内標準':'Walk (1.0 m/s) — Perez et al. (1992) forest standard'}</div>
@@ -2226,15 +2291,14 @@ ${buildHorseSelector('l',0,'lc','l-bw')}
 
 function lc(){
   const bw=num('l-bw',700),nh=int_('l-nh',1);
-  const ts=getTeamStats('l',nh);
-  const rho=RHO[v('l-sp')||'sugi']||600,len=num('l-len',4),ds=num('l-ds',22),dl=num('l-dl',32),nl=int_('l-nl',1);
-  const toolKey=v('l-tool')||'arch_tire_sod';
-  const tool=TOOLS[toolKey]||TOOLS['arch_tire_sod'];
-  const slp=num('l-sl',0),dist=num('l-dist',100);
+  const ts=getTeamStats('l',nh,bw);
+  const rho=RHO[v('l-sp')||'karamatsu']||600,len=num('l-len',3),ds=num('l-ds',30),dl=num('l-dl',35),nl=int_('l-nl',1);
+  const toolKey=v('l-tool')||'tg_sod';
+  const tool=TOOLS[toolKey]||TOOLS['tg_sod'];
+  const slp=num('l-sl',0),dist=num('l-dist',50);
   const spUser=num('l-spd',1.0);
   const r1=ds/200,r2=dl/200,vol=(Math.PI*r1*r1+Math.PI*r2*r2)/2*len;
   const lw=vol*rho,lw_load=lw*nl,sr=Math.sin(Math.atan(slp/100)),cosr=Math.cos(Math.atan(slp/100));
-  const W_total=(lw_load)+(tool.type==='arch'?num('l-arch-wt',100):tool.type==='sled'?num('l-sled-wt',30):0);
 
   // ── 物理モデル分岐 ──
   let FT=0,modelDesc='';
@@ -2242,7 +2306,7 @@ function lc(){
   if(tool.type==='arch'){
     const W_arch=num('l-arch-wt',100);
     const mu_arch=tool.mu_arch,mu_g=tool.mu_g,r_tail=tool.r_tail;
-    const F_arch=tool.arch_type==='tile'?mu_arch*W_arch*cosr:mu_arch*W_arch*cosr;
+    const F_arch=mu_arch*W_arch*cosr;
     const F_tail=mu_g*lw_load*r_tail*cosr;
     const F_slope=(lw_load+W_arch)*slp/100;
     FT=Math.max(F_arch+F_tail+F_slope,0);
@@ -2270,15 +2334,103 @@ function lc(){
     modelDesc=`μ=${tool.mu} × ${lw_load.toFixed(0)} kgf`;
   }
 
+  // ── 下り搬出 丸太自走リスク判定 ────────────────────────────────
+  // 物理根拠: 丸太の実効摩擦力 < 重力成分のとき丸太は自走する
+  //   自走条件: mu_eff < tan(theta) = |slp|/100 / sqrt(1+(slp/100)^2) ≈ |slp|/100 (小角近似)
+  //   自走加速度: a = g * (sin(theta) - mu_eff * cos(theta))  [m/s^2]
+  //   1.5m到達速度: v_log = sqrt(2 * a * 1.5)  馬と丸太の安全間隔を1.5mと想定
+  //   v_log > spUser(馬の作業速度) のとき馬が追いつかれる危険あり
+  // FT=0(クランプ前が負値)の時点が「ぎりぎり安全」の境界
+  let slideWarn = '';
+  if(slp < 0){
+    const absSlp = Math.abs(slp);
+    const theta = Math.atan(absSlp / 100);   // ラジアン
+    const sinT  = Math.sin(theta);
+    const cosT  = Math.cos(theta);
+    const g_ms2 = 9.81;
+
+    // 道具ごとの丸太への実効摩擦係数を計算
+    // arch: 後端(r_tail割合)のみ接地 → mu_g * r_tail が有効
+    // bachi/gd/chain: 全体または末端接地 → tool.mu(またはmu_g)が有効
+    let mu_eff = 0;
+    if(tool.type === 'arch'){
+      mu_eff = tool.mu_g * tool.r_tail;
+    } else if(tool.type === 'sled'){
+      if(tool.sled_type === 'bachi'){
+        mu_eff = tool.mu;
+      } else {
+        // ゴーデビル: 後端接地 mu_g*r_tail が支配的
+        mu_eff = tool.mu_g * tool.r_tail;
+      }
+    } else {
+      // チェーン: チェーン摩擦
+      mu_eff = tool.mu;
+    }
+
+    // 自走判定: 実効摩擦が勾配成分に負けているか
+    const F_fric_net = mu_eff * cosT;  // 単位重量あたり
+    const F_grav_net = sinT;           // 単位重量あたり
+
+    if(F_fric_net < F_grav_net){
+      // 丸太は自走する。加速度を計算
+      const a_slide = g_ms2 * (F_grav_net - F_fric_net);  // m/s^2
+      // 1.5m走行後の速度
+      const v_log_15 = Math.sqrt(2 * a_slide * 1.5);       // m/s
+      const v_horse  = spUser;                              // m/s（ユーザー入力）
+
+      if(v_log_15 > v_horse){
+        // 1.5m間隔到達時点で馬の速度を超えている → 追突危険
+        const excess = ((v_log_15 - v_horse) / v_horse * 100).toFixed(0);
+        slideWarn = `<div class="dangerbox mt8">` +
+          `<b>${ja ? '⚠ 丸太の自走危険（追突リスク）' : '⚠ Log runaway — collision risk'}</b><br>` +
+          `<span style="font-size:13px;line-height:1.7">` +
+          (ja
+            ? `この条件では摩擦力が重力成分に負け、丸太が自走します。<br>` +
+              `1.5m滑走後の丸太速度 <b>${v_log_15.toFixed(2)} m/s</b> は馬の作業速度 ${v_horse.toFixed(1)} m/s を <b>${excess}% 上回ります。</b><br>` +
+              `制動チェーン・抑木の使用が必須です。`
+            : `Friction cannot hold the log on this slope — runaway occurs.<br>` +
+              `Log speed after 1.5 m: <b>${v_log_15.toFixed(2)} m/s</b>, exceeding horse speed ${v_horse.toFixed(1)} m/s by <b>${excess}%</b>.<br>` +
+              `Braking chain or snubbing device is mandatory.`) +
+          `</span>` +
+          `<div style="font-size:11px;color:var(--text3);margin-top:6px">` +
+          (ja
+            ? `実効μ: ${mu_eff.toFixed(3)} ／ 必要μ: ${sinT.toFixed(3)} ／ 加速度: ${a_slide.toFixed(2)} m/s²`
+            : `Effective μ: ${mu_eff.toFixed(3)} / Required μ: ${sinT.toFixed(3)} / Accel: ${a_slide.toFixed(2)} m/s²`) +
+          `</div></div>`;
+      } else {
+        // 自走はするが1.5m以内で馬速度以下 → 注意喚起
+        slideWarn = `<div class="warnbox mt8">` +
+          `<b>${ja ? '⚠ 丸太の自走傾向あり（要注意）' : '⚠ Log tends to slide — caution'}</b><br>` +
+          `<span style="font-size:13px;line-height:1.7">` +
+          (ja
+            ? `摩擦力が重力成分に負けており、丸太は自走傾向にあります。<br>` +
+              `1.5m滑走後の速度 <b>${v_log_15.toFixed(2)} m/s</b> は現在の作業速度以下ですが、<br>` +
+              `馬が急停止した場合は追突の恐れがあります。制動装置の使用を推奨します。`
+            : `Log tends to slide (friction < gravity component).<br>` +
+              `Speed after 1.5 m: <b>${v_log_15.toFixed(2)} m/s</b> is within horse speed for now,<br>` +
+              `but sudden stops may cause collision. Braking device recommended.`) +
+          `</span>` +
+          `<div style="font-size:11px;color:var(--text3);margin-top:6px">` +
+          (ja
+            ? `実効μ: ${mu_eff.toFixed(3)} ／ 必要μ: ${sinT.toFixed(3)} ／ 加速度: ${a_slide.toFixed(2)} m/s²`
+            : `Effective μ: ${mu_eff.toFixed(3)} / Required μ: ${sinT.toFixed(3)} / Accel: ${a_slide.toFixed(2)} m/s²`) +
+          `</div></div>`;
+      }
+    }
+    // F_fric_net >= F_grav_net → 摩擦が勾配に勝っている。丸太は自走しない。警告不要。
+  }
+
   const plo=ts.teamPlo,phi=ts.teamPhi,pmd=(plo+phi)/2,pct=FT/pmd*100;
-  // 速度: スキッド型・スレッド型は遅め、タイヤ型は標準
-  const spA=tool.type==='arch'&&tool.arch_type==='tire'?Math.max(60-slp*0.5,20):Math.max(50-slp*0.5,15);
+  // 速度: 往路=ユーザー入力速度、復路=DB参照値（道具・勾配依存）
+  // spA/spE単位: m/min。dist[m]/sp[m/min] = 分 (正しい単位)
+  const spA_db=tool.type==='arch'&&tool.arch_type==='tire'?Math.max(60-slp*0.5,20):Math.max(50-slp*0.5,15);
   const spE=tool.type==='arch'&&tool.arch_type==='tire'?Math.min(90+slp*0.3,110):Math.min(80+slp*0.3,100);
-  const cyc=dist/(spA/60)+dist/(spE/60)+8+4;
+  const spA=spUser*60;  // ユーザー入力(m/s)→m/min: 往路の実作業速度
+  const cyc=dist/spA+dist/spE+8+4;  // [m/(m/min)] = 分
   const pw_kW=FT*9.81*spUser/1000;
   const pw_PS=FT*spUser/75;
   const wkJ_trip=FT*9.81*dist/1000;
-  const spLabel=RHONAMES[v('l-sp')||'sugi']||'';
+  const spLabel=RHONAMES[v('l-sp')||'karamatsu']||'';
   const toolLabel=tool[ja?'ja':'en']||'';
 
   // 推奨頭数カード（fc()と同レイアウト）
@@ -2294,14 +2446,15 @@ function lc(){
   const recBest_=recRowsData.find(r=>r.rec)||recRowsData.find(r=>r.ok)||recRowsData[recRowsData.length-1];
   const recHtml_=recRowsData.map(r=>{
     const isRec=r===recBest_;
-    const label=ja?`${r.n}頭`:`${r.n} horse${r.n>1?'s':''}`;
+    const label=ja?(r.n+'頭'):(r.n+(r.n>1?' horses':' horse'));
     const mark=r.lv===1?(ja?'余裕あり':'ample'):r.lv===2?(ja?'適正':'optimal'):r.lv===3?(ja?'重労働':'hard'):r.lv===4?(ja?'過酷':'severe'):(ja?'危険':'danger');
-    return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--bd)20">
-<span style="font-weight:${isRec?700:400};font-family:var(--ffm);min-width:52px;color:${isRec?'var(--text1)':'var(--text2)'}">${label}</span>
-<div style="flex:1;background:var(--bg2);border-radius:4px;height:8px;overflow:hidden"><div style="height:100%;width:${Math.min(r.pctN,150).toFixed(0)}%;background:${r.lvColor};border-radius:4px;transition:width 0.3s"></div></div>
-<span style="font-family:var(--ffm);font-size:13px;min-width:42px;text-align:right;color:${r.lvColor}">${r.pctN.toFixed(0)}%</span>
-<span style="font-size:11px;color:${r.lvColor};min-width:44px">${isRec?'★ '+mark:mark}</span>
-</div>`;
+    const starMark_=isRec?'★ '+mark:mark;
+    return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--bd)20">'
+      +'<span style="font-weight:'+(isRec?700:400)+';font-family:var(--ffm);min-width:52px;color:'+(isRec?'var(--text1)':'var(--text2)')+'">'+label+'</span>'
+      +'<div style="flex:1;background:var(--bg2);border-radius:4px;height:8px;overflow:hidden"><div style="height:100%;width:'+Math.min(r.pctN,150).toFixed(0)+'%;background:'+r.lvColor+';border-radius:4px;transition:width 0.3s"></div></div>'
+      +'<span style="font-family:var(--ffm);font-size:13px;min-width:42px;text-align:right;color:'+r.lvColor+'">'+r.pctN.toFixed(0)+'%</span>'
+      +'<span style="font-size:11px;color:'+r.lvColor+';min-width:44px">'+starMark_+'</span>'
+      +'</div>';
   }).join('');
   const sledNote_=tool.type==='sled'&&tool.sled_type==='bachi'?`<div style="font-size:11px;color:var(--text3);margin-top:6px">${ja?'※ バチバチ橇は基本1頭使用（馬事文化財団「働く馬」図録）':'※ Bachibachi sled: typically 1 horse (Bajibunka Foundation)'}</div>`:'';
   const recCard_=`<div class="rc mt8" style="border:1px solid var(--ok)40;background:var(--ok)08">
@@ -2313,7 +2466,7 @@ ${recHtml_}${sledNote_}
   const condSummary=`<div style="font-size:12px;color:var(--text2);line-height:1.8;margin-top:8px;padding:8px 10px;background:var(--bg2);border-radius:var(--rs)">
 <b>${ja?'入力条件':'Conditions'}</b><br>
 ${ja?'1回搬出本数':'Logs per trip'}: ${nl} ${ja?'本':'logs'}／${ja?'速度':'Speed'}: ${spUser.toFixed(1)} m/s<br>
-${ja?'樹種':'Species'}: ${spLabel}／${ja?'末口径':'Small-end dia.'}: ${num('l-ds',22)} cm<br>
+${ja?'樹種':'Species'}: ${spLabel}／${ja?'末口径':'Small-end dia.'}: ${num('l-ds',30)} cm<br>
 ${ja?'搬出道具':'Tool'}: ${toolLabel}／${ja?'勾配':'Slope'}: ${slp>0?'+':''}${slp}%／${ja?'距離':'Dist.'}: ${dist} m<br>
 <span style="color:var(--text3);font-size:11px">${modelDesc}</span>
 </div>`;
@@ -2326,16 +2479,19 @@ ${ja?'搬出道具':'Tool'}: ${toolLabel}／${ja?'勾配':'Slope'}: ${slp>0?'+':
 <div class="dr"><span>${t('load_wt')} (${nl}${ja?'本':'logs'} × ${lw.toFixed(0)} kg)</span><span class="dv">${lw_load.toFixed(0)} kg</span></div>
 </div>
 <div class="sec-lbl">${t('draftc')}</div><div class="rc mt8">
-<div class="rg">
-<div class="met"><div class="ml">${t('dr')}</div><div class="mv">${FT.toFixed(0)}</div><div class="mu">kgf</div><div class="msub">${ja?'物理モデルで計算（道具・地面・勾配・積載）':'Physical model: tool + ground + slope + load'}</div></div>
-<div class="met"><div class="ml">${t('tp')}<div style="font-size:10px;color:var(--text3)">${ja?'チーム合計':'team total'}</div></div><div class="mv">${plo.toFixed(0)}–${phi.toFixed(0)}</div><div class="mu">kgf</div></div>
+<div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px">
+<div class="met" style="margin:0"><div class="ml">${t('dr')}</div><div class="mv">${FT.toFixed(0)}</div><div class="mu">kgf</div><div class="msub">${ja?'物理モデルで計算（道具・地面・勾配・積載）':'Physical model: tool + ground + slope + load'}</div></div>
+<div style="text-align:center;font-size:20px;color:${pct>110?'var(--danger)':pct>85?'var(--warn)':'var(--text3)'};line-height:1">↔<div style="font-size:9px;color:var(--text3);margin-top:2px">${pct.toFixed(0)}%</div></div>
+<div class="met" style="margin:0"><div class="ml">${t('tp')}<div style="font-size:10px;color:var(--text3)">${ja?'チーム合計':'team total'}</div></div><div class="mv">${plo.toFixed(0)}–${phi.toFixed(0)}</div><div class="mu">kgf</div></div>
 </div>
 </div>
-${loadBar(pct,slp>40?(ja?'急傾斜上り搬出: ケーブルヤーダーの使用を推奨':'Steep uphill: cable yarder recommended'):slp<-30?(ja?'急傾斜下り搬出: 制動装置が必須':'Steep downhill: braking device required'):null,'log')}
+${loadBar(pct,slp>40?(ja?'急傾斜上り搬出: ケーブルヤーダーの使用を推奨':'Steep uphill: cable yarder recommended'):null,'log')}
+${slideWarn}
+${getYoungHorseWarn('l',nh)}
 ${recCard_}
 <div class="sec-lbl">${t('cycsec')}</div><div class="rc mt8">
 <div class="rg rg3">
-<div class="met"><div class="ml">${t('cyc')}</div><div class="mv">${cyc.toFixed(1)}</div><div class="mu">${ja?'分/回':'min/trip'}</div><div class="msub">${ja?'往路+復路+接続・休憩（12分）':'Out+return+hitching & rest (12min)'}</div></div>
+<div class="met"><div class="ml">${t('cyc')}</div><div class="mv">${cyc.toFixed(1)}</div><div class="mu">${ja?'分/回':'min/trip'}</div><div class="msub">${ja?`往路 ${spA.toFixed(0)} m/min ／ 復路 ${spE.toFixed(0)} m/min（DB参照）／ 接続・休憩 12分`:`Out ${spA.toFixed(0)} m/min / Return ${spE.toFixed(0)} m/min (DB ref.) / Hitch & rest 12min`}</div></div>
 </div>
 </div>
 ${condSummary}
@@ -2358,6 +2514,7 @@ const GRD={
   // mb: 素引き摩擦係数（摩擦+食い込みの総合値）, mp: 鉄板あり摩擦係数
   // 出典: Hassan & Gustafson (1983) ASAE Transactions 26(1):47-53 丸太スキッディング実測
   //       + OpenStax/NAVFAC 雪上木材摩擦 + 馬搬スケール補正
+  sod: {mb:0.55,mp:0.46,ja:'草地・牧草地',en:'Sod / grass'},
   hard:{mb:0.38,mp:0.32,ja:'硬い乾燥林床',en:'Hard dry forest floor'},
   firm:{mb:0.48,mp:0.40,ja:'普通の林床（腐葉土あり）',en:'Firm forest floor'},
   soft:{mb:0.58,mp:0.48,ja:'軟弱湿潤地',en:'Soft moist ground'},
@@ -2370,7 +2527,7 @@ function gdPanels(){
   const bw=getCalcBW('g');
   const cap_f=getHorseCap('g');
   const grOpts=Object.entries(GRD).map(([k,g])=>`<option value="${k}">${S.lang==='ja'?g.ja:g.en}</option>`).join('');
-  const spOpts=Object.entries(RHONAMES).map(([k,n])=>`<option value="${k}">${n}</option>`).join('');
+  const spOpts=Object.entries(RHONAMES).map(([k,n])=>`<option value="${k}"${k==='karamatsu'?' selected':''}>${n}</option>`).join('');
   const p0=`<div class="sec-lbl">${t('ps')}</div><div class="ic">
 ${buildHorseSelector('g',0,'gc','g-bw')}
 <div class="fld"><label>${t('bw')}</label><input type="number" id="g-bw" value="${bw}" min="200" max="1200" onchange="gc()" oninput="gc()"></div>
@@ -2379,10 +2536,10 @@ ${buildHorseSelector('g',0,'gc','g-bw')}
 </div>
 <div class="sec-lbl">${t('logset')}</div><div class="ic">
 <div class="fld"><label>${t('sp')}</label><select id="g-sp" onchange="gdAutoWt()" oninput="gdAutoWt()">${spOpts}</select></div>
-<div class="fld"><label>${t('ll')}</label><input type="number" id="g-len" value="4" min="0.5" max="20" step="0.1" onchange="gdAutoWt()" oninput="gdAutoWt()"></div>
-<div class="fld"><label>${t('ds')} — 末口（先端）</label><input type="number" id="g-ds" value="25" min="5" max="120" onchange="gdAutoWt()" oninput="gdAutoWt()"></div>
+<div class="fld"><label>${t('ll')}</label><input type="number" id="g-len" value="3" min="0.5" max="20" step="0.1" onchange="gdAutoWt()" oninput="gdAutoWt()"></div>
+<div class="fld"><label>${t('ds')} — 末口（先端）</label><input type="number" id="g-ds" value="30" min="5" max="120" onchange="gdAutoWt()" oninput="gdAutoWt()"></div>
 <div class="fld"><label>${t('dl')} — 元口（根元）</label><input type="number" id="g-dl" value="35" min="5" max="150" onchange="gdAutoWt()" oninput="gdAutoWt()"></div>
-<div class="fld"><label>丸太重量 / Log weight (kg) <span style="color:var(--text3);font-size:13px">自動計算</span></label><input type="number" id="g-wt" value="174" min="10" max="5000" onchange="gc()" oninput="gc()"></div>
+<div class="fld"><label>丸太重量 / Log weight (kg) <span style="color:var(--text3);font-size:13px" id="g-wt-lbl">${S.lang==='ja'?'自動計算':'auto'}</span> <button type="button" id="g-wt-reset" onclick="gdResetWt()" style="display:none;font-size:11px;padding:1px 6px;border-radius:4px;border:1px solid var(--border2);background:var(--bg2);color:var(--text2);cursor:pointer;margin-left:4px">${S.lang==='ja'?'リセット':'reset'}</button></label><input type="number" id="g-wt" value="174" min="10" max="5000" onchange="this.dataset.manual='1';gdShowReset(true);gc()" oninput="this.dataset.manual='1';gdShowReset(true);gc()"></div>
 </div>
 <div class="sec-lbl">${t('gndset')}</div><div class="ic">
 <div class="fld"><label>${t('gr')}</label><select id="g-gr" onchange="gc()" oninput="gc()">${grOpts}</select></div>
@@ -2396,8 +2553,67 @@ ${buildHorseSelector('g',0,'gc','g-bw')}
   return [p0,`<div id="gr2"></div>`];
 }
 
+// ──────────────────────────────────────────────
+// ──────────────────────────────────────────────
+// 作業ペース判定チャート / Pace Rating Chart
+// X軸: 作業時間(2〜12h) / Y軸: 必要日数 / 色: レベル5段階
+// ──────────────────────────────────────────────
+function paceChart(baseDays, whId, calcFn){
+  const ja=S.lang!=='en';
+  const whEl=document.getElementById(whId);
+  const inputWh=whEl?parseFloat(whEl.value)||6:6;
+  const hours=[2,3,4,5,6,7,8,9,10,12];
+  const colors_lv=['','#4a9eff','#52c97a','#f5c842','#f07820','#e8284a'];
+  const labels_lv_ja=['','余裕','適正','やや強め','過負荷','危険'];
+  const labels_lv_en=['','Ample','On track','Pushing','Overloaded','Danger'];
+  const maxDays=3.0;
+  const padL=28,padB=22,padT=8,padR=4;
+  const chartH=120,chartW=220;
+  const gW=chartW-padL-padR,gH=chartH-padT-padB;
+  const bw=Math.floor(gW/hours.length)-3;
+  let bars='',xLabels='',yLines='';
+  [0,1,2,3].forEach(function(d){
+    var y=padT+gH*(1-d/maxDays);
+    yLines+='<line x1="'+padL+'" y1="'+y.toFixed(0)+'" x2="'+( padL+gW)+'" y2="'+y.toFixed(0)+'" stroke="var(--bd)" stroke-width="0.5" stroke-dasharray="'+( d===0?'none':'3,3')+'"/>';
+    yLines+='<text x="'+( padL-3)+'" y="'+( y+4).toFixed(0)+'" text-anchor="end" font-size="8" fill="var(--text3)">'+d+'</text>';
+  });
+  var y1=padT+gH*(1-1/maxDays);
+  yLines+='<line x1="'+padL+'" y1="'+y1.toFixed(0)+'" x2="'+( padL+gW)+'" y2="'+y1.toFixed(0)+'" stroke="var(--ok)" stroke-width="1.2" opacity="0.7"/>';
+  hours.forEach(function(wh,hi){
+    var x=padL+hi*(gW/hours.length)+1;
+    var d=Math.min(baseDays*inputWh/Math.max(wh,0.1),maxDays);
+    var lv=d<=0.70?1:d<=1.00?2:d<=1.30?3:d<=1.70?4:5;
+    var col=colors_lv[lv];
+    var barH=Math.max(d/maxDays*gH,2);
+    var by=padT+gH-barH;
+    var isCurrent=Math.abs(wh-inputWh)<0.6;
+    bars+='<rect x="'+x.toFixed(0)+'" y="'+by.toFixed(0)+'" width="'+bw+'" height="'+barH.toFixed(0)+'" fill="'+col+'" rx="1" opacity="'+( isCurrent?1:0.65)+'"/>';
+    if(isCurrent)bars+='<rect x="'+( x-1).toFixed(0)+'" y="'+( by-1).toFixed(0)+'" width="'+( bw+2)+'" height="'+( barH+2).toFixed(0)+'" fill="none" stroke="'+col+'" stroke-width="1.5" rx="2"/>';
+    xLabels+='<text x="'+( x+bw/2).toFixed(0)+'" y="'+( chartH-padB+10)+'" text-anchor="middle" font-size="'+( isCurrent?9:8)+'" font-weight="'+( isCurrent?'bold':'normal')+'" fill="'+( isCurrent?col:'var(--text3)')+'">'+wh+'h</text>';
+  });
+  var svg='<svg width="100%" viewBox="0 0 '+chartW+' '+chartH+'" style="overflow:visible;display:block">'+yLines+bars+xLabels+'</svg>';
+  var curD=Math.min(baseDays,maxDays);
+  var curLv=curD<=0.70?1:curD<=1.00?2:curD<=1.30?3:curD<=1.70?4:5;
+  var curCol=colors_lv[curLv];
+  var curLabel=ja?labels_lv_ja[curLv]:labels_lv_en[curLv];
+  var comments_ja=['','休憩なしでも作業を終えられます。','適度な休憩をはさみながら完了できます。','頻繁な休憩が必要です。馬の様子をよく観察してください。','1日での完了は難しい状態です。面積を分けることを推奨します。','馬への負担が大きすぎます。面積を大幅に減らすか、複数日に分けてください。'];
+  var comments_en=['','Completable without rest breaks.','Completable with moderate rest breaks.','Frequent rest breaks needed. Watch the horse carefully.','Difficult to complete in one day. Consider splitting the area.','Load too high. Reduce area or split into multiple days.'];
+  var comment=ja?comments_ja[curLv]:comments_en[curLv];
+  return '<div class="rc mt8">'
+    +'<h3 style="margin-bottom:4px">'+(ja?'作業ペース判定':'Pace Rating')+'</h3>'
+    +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
+    +'<span style="font-size:14px;font-weight:700;color:'+curCol+'">'+ curLabel+'</span>'
+    +'<span style="font-size:12px;color:var(--text3);font-family:var(--ffm)">'+baseDays.toFixed(2)+(ja?' 日':'d')+'</span>'
+    +'</div>'
+    +'<div style="font-size:12px;color:'+curCol+';margin-bottom:8px;line-height:1.5">'+comment+'</div>'
+    +svg
+    +'<div style="font-size:10px;color:var(--text3);margin-top:4px;font-family:var(--ffm)">'+(ja?'Y軸 = 必要日数 / 緑線 = 1日でちょうど完了 / 太枠 = 現在の設定':'Y = days needed / green line = 1 day / bold bar = current setting')+'</div>'
+    +'</div>';
+}
+
+
 function onLToolChange(){
-  const key=v('l-tool')||'arch_tire_sod';
+  const key=v('l-tool')||'tg_sod';
   const tool=TOOLS[key];
   const archRow=document.getElementById('l-arch-wt-row');
   const sledRow=document.getElementById('l-sled-wt-row');
@@ -2427,25 +2643,38 @@ function onLToolChange(){
 }
 
 
+function gdShowReset(show){
+  const btn=document.getElementById('g-wt-reset');
+  const lbl=document.getElementById('g-wt-lbl');
+  if(btn)btn.style.display=show?'':'none';
+  if(lbl)lbl.style.display=show?'none':'';
+}
+function gdResetWt(){
+  const wt_el=document.getElementById('g-wt');
+  if(wt_el)delete wt_el.dataset.manual;
+  gdShowReset(false);
+  gdAutoWt(); // 自動計算値に戻す
+}
 function gdAutoWt(){
-  const rho=RHO[v('g-sp')||'sugi']||600,len=num('g-len',4),ds=num('g-ds',25),dl=num('g-dl',35);
+  const rho=RHO[v('g-sp')||'karamatsu']||600,len=num('g-len',3),ds=num('g-ds',30),dl=num('g-dl',35);
   const r1=ds/200,r2=dl/200,vol=(Math.PI*r1*r1+Math.PI*r2*r2)/2*len;
   const wt_el=document.getElementById('g-wt');
-  if(wt_el)wt_el.value=Math.round(vol*rho);
+  // 手動入力済みの場合は上書きしない（data-manual属性で管理）
+  if(wt_el&&!wt_el.dataset.manual)wt_el.value=Math.round(vol*rho);
   gc();
 }
 
 function gc(){
   const bw=num('g-bw',700),nh=int_('g-nh',1);
-  const ts=getTeamStats('g',nh);
+  const ts=getTeamStats('g',nh,bw);
   const cap_f=ts.cap0;
-  const wt=num('g-wt',300),g=GRD[v('g-gr')||'firm'];
+  const wt=num('g-wt',300),g=GRD[v('g-gr')||'sod'];
   const slp=num('g-sl',0),dist=num('g-dist',50);
   const spUser=num('g-spd',1.0);
 
-  const len=num('g-len',4),ds=num('g-ds',25),dl=num('g-dl',35);
+  const len=num('g-len',3),ds=num('g-ds',30),dl=num('g-dl',35);
   const r1=ds/200,r2=dl/200,vol=(Math.PI*r1*r1+Math.PI*r2*r2)/2*len;
-  const rho=RHO[v('g-sp')||'sugi']||600;
+  const rho=RHO[v('g-sp')||'karamatsu']||600;
 
   const sr=Math.atan(slp/100),cs=Math.cos(sr),ss=Math.sin(sr);
   const Fg=wt*ss;
@@ -2477,6 +2706,7 @@ function gc(){
   if(pb>110&&pp<=110)warn=`<div class="warnbox mt8">素引きは過負荷ですが、鉄板を使えば安全な範囲内に収まります。この条件では鉄板の使用が有効です。</div>`;
   else if(pb>110&&pp>110)warn=`<div class="dangerbox mt8">両方とも過負荷です。丸太重量を減らすか、頭数を増やしてください。</div>`;
   if(slp<=-20)warn+=`<div class="warnbox mt6">急下り搬出: 丸太が馬に追いつく危険があります。制動チェーン・抑木を必ず使用。</div>`;
+  warn+=getYoungHorseWarn('g',nh);
 
   const r=document.getElementById('gr2');if(!r)return;
   r.innerHTML=`
