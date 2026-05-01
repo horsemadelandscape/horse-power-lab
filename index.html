@@ -24,14 +24,14 @@
   --ok-bd:rgba(45,122,94,.25);--warn-bd:rgba(184,131,42,.25);--danger-bd:rgba(184,50,50,.25);
   --r:10px;--rs:7px;--ffm:'DM Mono',monospace;
 }
-html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,sans-serif;font-size:16px}
+html,body{height:100%;overflow:hidden;background:#1a1a1a;color:var(--text);font-family:system-ui,-apple-system,sans-serif;font-size:16px}
 button{cursor:pointer;border:none;background:none;color:inherit;font-family:inherit;font-size:inherit;touch-action:manipulation}
 input,select{font-family:inherit;color:var(--text);background:var(--bg2);border:1px solid var(--border2);border-radius:var(--rs);padding:8px 10px;width:100%;font-size:16px;-webkit-appearance:none;appearance:none;touch-action:manipulation}
 input:focus,select:focus{outline:none;border-color:var(--ok);background:#fff}
-#app{position:fixed;inset:0;display:flex;flex-direction:column}
+#app{position:fixed;top:0;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;display:flex;flex-direction:column;box-shadow:0 0 40px rgba(0,0,0,.5)}
 
 /* SPLASH */
-#splash{position:fixed;inset:0;z-index:999;cursor:pointer;background:#000;display:flex;align-items:flex-end;justify-content:center}
+#splash{position:fixed;top:0;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;z-index:999;cursor:pointer;background:#000;display:flex;align-items:flex-end;justify-content:center}
 #splash.gone{display:none}
 #simg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 15%}
 #splash-tap{position:relative;z-index:2;color:rgba(255,255,255,.7);font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:0 0 40px;font-family:var(--ffm)}
@@ -160,7 +160,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:32px;heigh
 .cmpM{font-size:13px;color:var(--text2);margin-top:2px}
 
 /* DATABASE OVERLAY */
-#dbov{position:fixed;inset:0;z-index:800;display:none;flex-direction:column;background:var(--bg)}
+#dbov{position:fixed;top:0;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;z-index:800;display:none;flex-direction:column;background:var(--bg)}
 #dbov.op{display:flex}
 .dbh{display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);background:#fff;gap:10px;flex-shrink:0}
 .dbh h2{font-size:17px;font-weight:700;flex:1}
@@ -181,7 +181,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:32px;heigh
 /* MODAL */
 .mo{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:900;display:none;align-items:flex-end;justify-content:center}
 .mo.op{display:flex}
-.ms{background:#fff;border-radius:var(--r) var(--r) 0 0;width:100%;max-width:500px;max-height:85vh;overflow-y:auto;padding:20px}
+.ms{background:#fff;border-radius:var(--r) var(--r) 0 0;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;padding:20px}
 .ms h2{font-size:20px;font-weight:700;margin-bottom:14px}
 .mact{display:flex;gap:8px;margin-top:14px}
 .btn{padding:10px;border-radius:var(--rs);font-weight:600;font-size:16px;flex:1;text-align:center}
@@ -193,7 +193,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:32px;heigh
 ::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px}
 
 /* GUIDE TOUR */
-#guide-overlay{position:fixed;inset:0;z-index:950;pointer-events:none}
+#guide-overlay{position:fixed;top:0;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;z-index:950;pointer-events:none}
 #guide-overlay.active{pointer-events:auto}
 .guide-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);opacity:0;transition:opacity .3s}
 #guide-overlay.active .guide-backdrop{opacity:1}
@@ -252,7 +252,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:32px;heigh
 </div>
 
 <!-- MISSION PAGE -->
-<div id="s-mission" style="display:none;position:fixed;inset:0;z-index:998;overflow:hidden">
+<div id="s-mission" style="display:none;position:fixed;top:0;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;z-index:998;overflow:hidden">
   <div id="mission-bg" style="position:absolute;inset:0;background-size:cover;background-position:center 15%"></div>
   <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.50) 0%,rgba(0,0,0,.80) 100%)"></div>
   <div style="position:relative;z-index:2;height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch">
@@ -1162,7 +1162,7 @@ const IMPL={
   // F_sw [kgf/m]: 耕深2"(5cm): c=13.4 m=17.1 f=20.1 / 耕深3"(7.5cm): c=19.3 m=25.3 f=29.0
   // セクション選択（Pioneer 3'=90cm/セクション）。実測キャリブレーション未実施→推定モデル
   // c/m/f/dw はダミー（fc()内のspring_toothブランチが計算を担う）
-  spring_tooth:{c:0,m:0,f:0,dw:90,sp:3.5,wt:'med',trust:'EST',ja:'スプリングトゥースハロー',en:'Spring-Tooth Harrow'},
+  spring_tooth:{c:0,m:0,f:0,dw:90,sp:3.5,wt:'med',trust:'B',ja:'スプリングトゥースハロー',en:'Spring-Tooth Harrow'},
   // spike_tooth: 物理モデル。F_tine×n + 自重×μ
   // F_tine [kgf/本]: 軽土仕上げ=1.5, 中土砕土=2.3, 重土砕土=3.2（800kg馬・使用感逆算）
   // 自重μ=0.45（鉄対耕起済み土壌）。フレームは浮く前提（爪全埋没）
@@ -1371,11 +1371,16 @@ function fc(){
       calcDiv4.innerHTML=`F_row: ${f_row} kgf × ${rcRows}条 × ${attFactor} (${attLabel}) = ${(f_row*rcRows*attFactor).toFixed(1)} kgf<br>${ja2?'転がり抵抗':'Roll resistance'}: +${F_roll} kgf ／ ${ja2?'合計':'Total'}: ${dr.toFixed(1)} kgf`;
     }
   } else if(implKey==='spring_tooth'){
-    // スプリングトゥースハロー: ASAE D497 / Tillers Int'l (2002)
+    // スプリングトゥースハロー: Harrigan (2013) The New Horse-Powered Farm pp.155-156
+    // 実測: 23爪・7.5フィート(228.6cm)・中土相当
+    //   2インチ(5.1cm)深: 415 lbf = 188 kgf → 82.3 kgf/m
+    //   3インチ(7.6cm)深: 625 lbf = 284 kgf → 124.0 kgf/m
+    // 旧係数(ASAE D497ベース)は単位変換誤りにより実測の約1/5だった
+    // 軽土・重土はASAE比率(c:m:f=90:115:135)でスケール
     const sthSec=parseInt(document.getElementById('f-sth-sec')?.value||'2')||2;
     const sthDepth=parseFloat(document.getElementById('f-sth-depth')?.value||'5')||5;
     wcm=sthSec*90;
-    const STH={c:[13.4,19.3],m:[17.1,25.3],f:[20.1,29.0]};
+    const STH={c:[64.4,97.0],m:[82.3,124.0],f:[96.6,145.6]};
     const sk2=sk==='c'?'c':sk==='m'?'m':'f';
     const [sw5,sw75]=STH[sk2];
     let f_sw;
@@ -2149,9 +2154,9 @@ const TOOLS={
   arch_skid_sod:{type:'arch',arch_type:'skid',ground:'sod', mu_arch:0.50,mu_g:0.42,r_tail:0.60,trust:'C',ja:'ログアーチ（スキッド型）— 林床',en:'Log Arch (skid) — forest floor'},
   arch_skid_road:{type:'arch',arch_type:'skid',ground:'road',mu_arch:0.40,mu_g:0.38,r_tail:0.60,trust:'C',ja:'ログアーチ（スキッド型）— 砂利道',en:'Log Arch (skid) — gravel road'},
   arch_skid_snow:{type:'arch',arch_type:'skid',ground:'snow',mu_arch:0.20,mu_g:0.18,r_tail:0.60,trust:'C',ja:'ログアーチ（スキッド型）— 積雪',en:'Log Arch (skid) — snow'},
-  arch_tire_sod:{type:'arch',arch_type:'tire',ground:'sod', mu_arch:0.08,mu_g:0.42,r_tail:0.60,trust:'B',ja:'ログアーチ（タイヤ型）— 林床',en:'Log Arch (tire) — forest floor'},
-  arch_tire_road:{type:'arch',arch_type:'tire',ground:'road',mu_arch:0.08,mu_g:0.38,r_tail:0.60,trust:'B',ja:'ログアーチ（タイヤ型）— 砂利道',en:'Log Arch (tire) — gravel road'},
-  arch_tire_snow:{type:'arch',arch_type:'tire',ground:'snow',mu_arch:0.06,mu_g:0.18,r_tail:0.60,trust:'B',ja:'ログアーチ（タイヤ型）— 積雪',en:'Log Arch (tire) — snow'},
+  arch_tire_sod:{type:'arch',arch_type:'tire',ground:'sod', mu_arch:0.08,mu_g:0.42,r_tail:0.90,trust:'B',ja:'ログアーチ（タイヤ型）— 林床',en:'Log Arch (tire) — forest floor'},
+  arch_tire_road:{type:'arch',arch_type:'tire',ground:'road',mu_arch:0.08,mu_g:0.40,r_tail:0.90,trust:'B',ja:'ログアーチ（タイヤ型）— 砂利道',en:'Log Arch (tire) — gravel road'},
+  arch_tire_snow:{type:'arch',arch_type:'tire',ground:'snow',mu_arch:0.06,mu_g:0.18,r_tail:0.90,trust:'B',ja:'ログアーチ（タイヤ型）— 積雪',en:'Log Arch (tire) — snow'},
   arch_full:{type:'arch',arch_type:'full',ground:'any',  mu_arch:0.08,mu_g:0.00,r_tail:0.00,trust:'B',ja:'ログアーチ（フルリフト）',en:'Log Arch (full lift)'},
   // ── Logging Sled / 運材橇 ──
   // バチバチ橇: F = μ × (W_sled + W_logs)  丸太全体をランナーに乗せる（前後2台）
@@ -2160,9 +2165,9 @@ const TOOLS={
   bachi_sod:{type:'sled',sled_type:'bachi',mu:0.42,trust:'A',ja:'バチバチ橇（運材橇）— 林床',en:'Bachibachi Sled — forest floor'},
   // ゴーデビル: F = μ×W_sled + μ_g×W_log×r_tail  前端のみ乗せ・後端引きずり
   // Bryant(1913)「one-horse sled」/ Draft Animal Power Forum実測
-  gd_snow:{type:'sled',sled_type:'gd',mu:0.20,mu_g:0.20,r_tail:0.65,trust:'B',ja:'ゴーデビル / バチ橇 — 積雪',en:'Go-devil / Logging Sled — snow'},
+  gd_snow:{type:'sled',sled_type:'gd',mu:0.20,mu_g:0.20,r_tail:0.65,trust:'C',ja:'ゴーデビル / バチ橇 — 積雪',en:'Go-devil / Logging Sled — snow'},
   gd_sod:{type:'sled',sled_type:'gd',mu:0.50,mu_g:0.50,r_tail:0.65,trust:'B',ja:'ゴーデビル / バチ橇 — 林床',en:'Go-devil / Logging Sled — forest floor'},
-  gd_hard:{type:'sled',sled_type:'gd',mu:0.12,mu_g:0.12,r_tail:0.65,trust:'B',ja:'ゴーデビル / バチ橇 — 圧雪/アイス路',en:'Go-devil — hardpack / ice road'},
+  gd_hard:{type:'sled',sled_type:'gd',mu:0.12,mu_g:0.12,r_tail:0.65,trust:'C',ja:'ゴーデビル / バチ橇 — 圧雪/アイス路',en:'Go-devil — hardpack / ice road'},
   // ── チェーン直引き（現状維持）──
   tg_sod:{type:'chain',mu:0.55,trust:'B',ja:'チェーン直引き（面取付）— 草地',en:'Chain Tongs — sod'},
   tg_snow:{type:'chain',mu:0.57,trust:'B',ja:'チェーン直引き — 積雪',en:'Chain Tongs — snow'},
@@ -2791,8 +2796,8 @@ const DB_CONTENT={
 <tr><td>サルキープラウ（乗用）</td><td colspan="3">ウォーキングプラウ × 0.85 + 20 kgf（転がり抵抗）</td><td>3.0 mph</td><td>物理モデル</td></tr>
 <tr><td>タンデムディスクハロー</td><td colspan="3">物理モデル: F_cut(枚数×径×土質) + F_roll(自重×0.08)</td><td>3.5 mph</td><td>物理モデル</td></tr>
 <tr><td>シングルディスクハロー</td><td>55</td><td>65</td><td>75</td><td>3.5 mph</td><td>lbf/ft</td></tr>
-<tr><td>スプリングトゥースハロー（5cm深）</td><td>13.4</td><td>17.1</td><td>20.1</td><td>3.5 mph</td><td>kgf/m幅</td></tr>
-<tr><td>スプリングトゥースハロー（7.5cm深）</td><td>19.3</td><td>25.3</td><td>29.0</td><td>3.5 mph</td><td>kgf/m幅</td></tr>
+<tr><td>スプリングトゥースハロー（5cm深）</td><td>64.4</td><td>82.3</td><td>96.6</td><td>3.5 mph</td><td>kgf/m幅</td></tr>
+<tr><td>スプリングトゥースハロー（7.5cm深）</td><td>97.0</td><td>124.0</td><td>145.6</td><td>3.5 mph</td><td>kgf/m幅</td></tr>
 <tr><td>スパイクトゥースハロー</td><td colspan="3">物理モデル: F_tine×本数 + 自重×μ（ASAE値は過小のため不採用）</td><td>3.5 mph</td><td>物理モデル</td></tr>
 <tr><td>ウォーキングカルチベーター</td><td>5</td><td>8</td><td>13</td><td>3.0 mph</td><td>kgf/爪</td></tr>
 <tr><td>ライディングカルチベーター</td><td>38.6</td><td>52.2</td><td>61.2</td><td>2.5 mph</td><td>kgf/条</td></tr>
@@ -2800,14 +2805,14 @@ const DB_CONTENT={
 <div class="dbnote">ASAE D497.1 / Harrigan & Roosenberg (2002) Tillers Int'l / MSU。
 ウォーキングプラウ係数: ASAE D497.7 + 実用知見（1頭=10", 2頭=12"）から逆算キャリブレーション（信頼度B）。
 スパイクトゥース: ASAE30〜50 lbf/ftは工場製鋼製を前提とし過小。物理モデル（F_tine×n+自重×μ）に切り替え。ユーザー実測（800kg馬・重め）から逆算（信頼度EST）。
-スプリングトゥース: ASAE D497直接値（信頼度EST・実測データ募集中）。
+スプリングトゥース: Harrigan (2013) The New Horse-Powered Farm pp.155–156 実測値（23爪・7.5フィート・中土）。2インチ深=82.3 kgf/m、3インチ深=124.0 kgf/m。軽土・重土はASAE比率でスケール（信頼度B）。推奨頭数目安（Harrigan）: 2頭=15爪4.5ft / 2〜3頭=17爪5.5ft / 3頭=23爪7.5ft / 4頭=25爪8.5ft。\nシングルディスク: 牽引力は農具総重量（ディスク＋ライダー）の約2/3に相当（Harrigan実測: 655lbs→430lbf・815lbs→550lbf、両条件で確認）。
 馬耕犂: Hiraga & Sugano (2017) J. Equine Sci. PMC5383625</div></div>
 <div class="dbsec"><h3>農具別 計算ロジック詳細</h3>
 <table class="dbt"><thead><tr><th>農具</th><th>計算式</th><th>主な変数</th><th>信頼度</th></tr></thead><tbody>
 <tr><td>ウォーキングプラウ</td><td>F_soil × w[cm]</td><td>幅(8〜16インチ)・土質</td><td>B</td></tr>
 <tr><td>サルキープラウ</td><td>F_soil × w × 0.85 × bottom_f + 20</td><td>幅・土質・底タイプ(標準/Kvernland)</td><td>B</td></tr>
 <tr><td>ディスクハロー</td><td>F_cut(枚数×径×土質) + 自重×0.08</td><td>枚数・径・間隔・タイプ</td><td>B</td></tr>
-<tr><td>スプリングトゥース</td><td>F_sw(深さ・土質) × 幅[m]</td><td>セクション数・耕深(3〜8cm)</td><td>EST</td></tr>
+<tr><td>スプリングトゥース</td><td>F_sw(深さ・土質) × 幅[m]</td><td>セクション数・耕深(3〜8cm)</td><td>B</td></tr>
 <tr><td>スパイクトゥース</td><td>F_tine × 本数 + 重量 × 0.45</td><td>本数・道具重量・土質・工程</td><td>EST</td></tr>
 <tr><td>walk_cultiv</td><td>(F_tine × n + F_hilling) × phaseMult</td><td>爪数・排土板・作業工程</td><td>B</td></tr>
 <tr><td>riding_cultiv</td><td>F_row × 条数 × att_f + 10</td><td>条数・アタッチメント</td><td>B</td></tr>
@@ -2859,10 +2864,12 @@ Pioneer社（1976〜2022, Ohio）: 農耕馬具の主要メーカー。2022年�
 <tr><td>Stevenson & Wassersug (1993) Nature</td><td>馬の持続出力 0.75-1 hp, ピーク 14.9 hp</td><td><span class="bgtag" style="background:var(--ok-bg);color:var(--ok)">Nature誌</span></td></tr>
 <tr><td>NRC (2007) Nutrient Requirements of Horses 6th ed.</td><td>エネルギー所要量</td><td><span class="bgtag" style="background:var(--ok-bg);color:var(--ok)">米国科学院</span></td></tr>
 <tr><td>Hiraga & Sugano (2017) J. Equine Sci. PMC5383625</td><td>日本農用馬・水田作業実測</td><td><span class="bgtag" style="background:var(--ok-bg);color:var(--ok)">査読論文</span></td></tr>
+<tr><td>Harrigan, T. (2013) The New Horse-Powered Farm pp.153–161</td><td>スプリングトゥース・ディスクハロー実測牽引力（信頼度B）</td><td><span class="bgtag" style="background:var(--ok-bg);color:var(--ok)">学術実測</span></td></tr>
 <tr><td>Small Farmer's Journal (SFJ) Fjordworks連載</td><td>馬耕実践・農具サイズ・使用感の一次資料</td><td><span class="bgtag" style="background:var(--warn-bg);color:var(--warn)">実践記録</span></td></tr>
 <tr><td>Hapgood Sulky vs Walking Plow Trial (1883)</td><td>サルキー/歩行プラウ牽引力実測（De Smet Leader紙）</td><td><span class="bgtag" style="background:var(--warn-bg);color:var(--warn)">歴史実測</span></td></tr>
 <tr><td>FAO/Niger・Zimbabwe牛耕実測</td><td>カルチベーター爪抵抗の傍証</td><td><span class="bgtag" style="background:var(--warn-bg);color:var(--warn)">圃場実測</span></td></tr>
 <tr><td>Pioneer Equipment カタログ (2013)</td><td>農具スペック・サイズ情報</td><td><span class="bgtag" style="background:var(--warn-bg);color:var(--warn)">メーカー資料</span></td></tr>
+<tr><td>Harrigan (2013) p.157–158 TABLE 10.2【記録のみ・未実装】</td><td>鎌式モア牽引力成分: 転がり30%・機械23%・作物47% / 合計63〜69 lbf/bar-ft</td><td><span class="bgtag" style="background:var(--warn-bg);color:var(--warn)">将来実装</span></td></tr>
 <tr><td>ユーザー実測（800kg馬・スパイクトゥース）</td><td>スパイクトゥース物理モデル係数の逆算根拠</td><td><span class="bgtag" style="background:var(--warn-bg);color:var(--warn)">実測逆算</span></td></tr>
 </tbody></table></div>`},
   ],
@@ -3166,9 +3173,7 @@ Beam length = working width (mounted crosswise behind horse)
 <tr><td>トングス直引き（面取付）</td><td>草地</td><td>0.55 (55%)</td><td>806 lbf</td><td>2.1</td><td>4.5</td></tr>
 <tr><td>トングス直引き</td><td>積雪</td><td>0.57 (57%)</td><td>845 lbf</td><td>1.9</td><td>4.2</td></tr>
 </tbody></table>
-<div class="dbnote">Harrigan, Roosenberg, Perkins & Sarge (2002). TechGuide 2G-212, Tillers International / Michigan State Univ.
-実測丸太: 1,475 lb (669 kg) レッドオーク生木。チーム: 3,850 lb (1,746 kg)牛。
-アーチ vs トングス: アーチは27%少ない牽引力、または36%重い丸太を同じ努力で搬出可能。</div></div>`},
+<div class="dbnote">出典①: Harrigan, T. (2013). "Understanding Implement Draft and Pulling Forces." In: Leslie, S. <em>The New Horse-Powered Farm</em>. Storey Publishing. pp.281–285.<br>実測丸太: 1,475 lb (669 kg) レッドオーク生木。チーム: ドラフトホース＆牛（Tillers International, Michigan）。路面: 砂利道・干し草地（春）・積雪・圧雪路。<br>ログアーチ(タイヤ型): 砂利道590 lbf / 草地592 lbf — 路面が変わっても牽引力はほぼ一定（丸太重量の40%）。<br>本アプリの車輪を使う道具（ログアーチ等）は全て<strong>空気タイヤ使用を前提</strong>。空気タイヤは鉄タイヤに比べ転がり抵抗が約40〜55%少ない。mu_arch=0.08（8%）はTABLE 10.1実測（空気タイヤ: 干し草地7%・固い土10%）の中間値として整合確認済み。鉄タイヤ使用時はGVW比9〜16%（実測）と大幅に増加する。出典: Harrigan (2013) p.157 TABLE 10.1。<br>⚠ ゴーデビル（圧雪・積雪）: スキッドランナーが雪を圧縮・掘削する抵抗が加わるため、摩擦係数モデルは実際の負荷を<strong>大幅に過少推定</strong>します（実測比2〜4倍）。雪上使用時は特に注意。<br>出典②: Harrigan, Roosenberg, Perkins &amp; Sarge (2002). TechGuide 2G-212, Tillers International / Michigan State Univ.<br>アーチ vs トングス: アーチは27%少ない牽引力、または36%重い丸太を同じ努力で搬出可能（丸太重量比 40% vs 55%）。</div></div>`},
     {tab:{ja:'実績データ',en:'Field Data'},
      html:`<div class="dbsec"><h3>生産性実績（学術論文）</h3>
 <table class="dbt"><thead><tr><th>出典</th><th>1回搬出量</th><th>日産量</th><th>搬出距離</th><th>勾配</th></tr></thead><tbody>
@@ -3532,7 +3537,7 @@ function showUpdateBanner(){
   const later=lang==='ja'?'あとで':'Later';
   const banner=document.createElement('div');
   banner.id='update-banner';
-  banner.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;background:#1a1a1a;color:#f5f5f5;border-radius:14px;padding:14px 18px;display:flex;flex-direction:column;gap:10px;box-shadow:0 6px 28px rgba(0,0,0,.4);max-width:calc(100vw - 40px);width:340px;font-size:14px;line-height:1.5;animation:slideUp .3s ease';
+  banner.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;background:#1a1a1a;color:#f5f5f5;border-radius:14px;padding:14px 18px;display:flex;flex-direction:column;gap:10px;box-shadow:0 6px 28px rgba(0,0,0,.4);max-width:420px;width:320px;font-size:14px;line-height:1.5;animation:slideUp .3s ease';
   banner.innerHTML=`<div>${msg}</div><div style="display:flex;gap:8px;justify-content:flex-end"><button onclick="document.getElementById('update-banner').remove()" style="background:rgba(255,255,255,.12);border:none;color:#ccc;padding:7px 14px;border-radius:8px;font-size:13px;cursor:pointer">${later}</button><button onclick="applyUpdate()" style="background:#2d7a5e;border:none;color:#fff;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">${btn}</button></div>`;
   if(!document.getElementById('update-banner-style')){
     const s=document.createElement('style');s.id='update-banner-style';
