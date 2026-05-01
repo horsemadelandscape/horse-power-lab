@@ -24,16 +24,16 @@
   --ok-bd:rgba(45,122,94,.25);--warn-bd:rgba(184,131,42,.25);--danger-bd:rgba(184,50,50,.25);
   --r:10px;--rs:7px;--ffm:'DM Mono',monospace;
 }
-html,body{height:100%;overflow:hidden;background:#1a1a1a;color:var(--text);font-family:system-ui,-apple-system,sans-serif;font-size:16px}
+html,body{height:100%;overflow:hidden;background:#111;color:var(--text);font-family:system-ui,-apple-system,sans-serif;font-size:16px}
 button{cursor:pointer;border:none;background:none;color:inherit;font-family:inherit;font-size:inherit;touch-action:manipulation}
 input,select{font-family:inherit;color:var(--text);background:var(--bg2);border:1px solid var(--border2);border-radius:var(--rs);padding:8px 10px;width:100%;font-size:16px;-webkit-appearance:none;appearance:none;touch-action:manipulation}
 input:focus,select:focus{outline:none;border-color:var(--ok);background:#fff}
-#app{position:fixed;top:0;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;display:flex;flex-direction:column;box-shadow:0 0 40px rgba(0,0,0,.5)}
+#app{position:fixed;inset:0;display:flex;flex-direction:column}
 
 /* SPLASH */
-#splash{position:fixed;top:0;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;z-index:999;cursor:pointer;background:#000;display:flex;align-items:flex-end;justify-content:center}
+#splash{position:fixed;inset:0;z-index:999;cursor:pointer;background:#000;display:flex;align-items:flex-end;justify-content:center}
 #splash.gone{display:none}
-#simg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 15%}
+#simg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 15%;transform:scale(1.02);transform-origin:center 15%}
 #splash-tap{position:relative;z-index:2;color:rgba(255,255,255,.7);font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:0 0 40px;font-family:var(--ffm)}
 
 /* SCREENS */
@@ -160,7 +160,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:32px;heigh
 .cmpM{font-size:13px;color:var(--text2);margin-top:2px}
 
 /* DATABASE OVERLAY */
-#dbov{position:fixed;top:0;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;z-index:800;display:none;flex-direction:column;background:var(--bg)}
+#dbov{position:fixed;inset:0;z-index:800;display:none;flex-direction:column;background:var(--bg)}
 #dbov.op{display:flex}
 .dbh{display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);background:#fff;gap:10px;flex-shrink:0}
 .dbh h2{font-size:17px;font-weight:700;flex:1}
@@ -181,20 +181,19 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:32px;heigh
 /* MODAL */
 .mo{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:900;display:none;align-items:flex-end;justify-content:center}
 .mo.op{display:flex}
-.ms{background:#fff;border-radius:var(--r) var(--r) 0 0;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;padding:20px}
+.ms{background:#fff;border-radius:var(--r) var(--r) 0 0;width:100%;max-width:500px;max-height:85vh;overflow-y:auto;padding:20px}
 .ms h2{font-size:20px;font-weight:700;margin-bottom:14px}
 .mact{display:flex;gap:8px;margin-top:14px}
 .btn{padding:10px;border-radius:var(--rs);font-weight:600;font-size:16px;flex:1;text-align:center}
 .bp{background:var(--text);color:#fff}
 .bg2{border:1px solid var(--border2);color:var(--text2)}
 
-.scr::-webkit-scrollbar,.dbsec::-webkit-scrollbar,.dbtab-content::-webkit-scrollbar{width:4px}
-.scr::-webkit-scrollbar-track,.dbsec::-webkit-scrollbar-track,.dbtab-content::-webkit-scrollbar-track{background:transparent}
-.scr::-webkit-scrollbar-thumb,.dbsec::-webkit-scrollbar-thumb,.dbtab-content::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px}
-#splash *::-webkit-scrollbar,#s-mission *::-webkit-scrollbar{display:none}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px}
 
 /* GUIDE TOUR */
-#guide-overlay{position:fixed;top:0;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;z-index:950;pointer-events:none}
+#guide-overlay{position:fixed;inset:0;z-index:950;pointer-events:none}
 #guide-overlay.active{pointer-events:auto}
 .guide-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);opacity:0;transition:opacity .3s}
 #guide-overlay.active .guide-backdrop{opacity:1}
@@ -253,10 +252,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:32px;heigh
 </div>
 
 <!-- MISSION PAGE -->
-<div id="s-mission" style="display:none;position:fixed;top:0;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;z-index:998;overflow:hidden">
-  <div id="mission-bg" style="position:absolute;inset:0;background-size:cover;background-position:center 15%"></div>
+<div id="s-mission" style="display:none;position:fixed;inset:0;z-index:998;overflow:hidden">
+  <div id="mission-bg" style="position:absolute;inset:-4px;background-size:cover;background-position:center 15%"></div>
   <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.50) 0%,rgba(0,0,0,.80) 100%)"></div>
-  <div style="position:relative;z-index:2;height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none">
+  <div style="position:relative;z-index:2;height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch">
     <div style="min-height:100%;display:flex;flex-direction:column;padding:36px 26px 48px;max-width:520px;margin:0 auto">
 
       <!-- JP SECTION -->
@@ -3538,7 +3537,7 @@ function showUpdateBanner(){
   const later=lang==='ja'?'あとで':'Later';
   const banner=document.createElement('div');
   banner.id='update-banner';
-  banner.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;background:#1a1a1a;color:#f5f5f5;border-radius:14px;padding:14px 18px;display:flex;flex-direction:column;gap:10px;box-shadow:0 6px 28px rgba(0,0,0,.4);max-width:420px;width:320px;font-size:14px;line-height:1.5;animation:slideUp .3s ease';
+  banner.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;background:#1a1a1a;color:#f5f5f5;border-radius:14px;padding:14px 18px;display:flex;flex-direction:column;gap:10px;box-shadow:0 6px 28px rgba(0,0,0,.4);max-width:calc(100vw - 40px);width:340px;font-size:14px;line-height:1.5;animation:slideUp .3s ease';
   banner.innerHTML=`<div>${msg}</div><div style="display:flex;gap:8px;justify-content:flex-end"><button onclick="document.getElementById('update-banner').remove()" style="background:rgba(255,255,255,.12);border:none;color:#ccc;padding:7px 14px;border-radius:8px;font-size:13px;cursor:pointer">${later}</button><button onclick="applyUpdate()" style="background:#2d7a5e;border:none;color:#fff;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">${btn}</button></div>`;
   if(!document.getElementById('update-banner-style')){
     const s=document.createElement('style');s.id='update-banner-style';
