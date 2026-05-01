@@ -188,9 +188,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:32px;heigh
 .bp{background:var(--text);color:#fff}
 .bg2{border:1px solid var(--border2);color:var(--text2)}
 
-::-webkit-scrollbar{width:4px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px}
+.scr::-webkit-scrollbar,.dbsec::-webkit-scrollbar,.dbtab-content::-webkit-scrollbar{width:4px}
+.scr::-webkit-scrollbar-track,.dbsec::-webkit-scrollbar-track,.dbtab-content::-webkit-scrollbar-track{background:transparent}
+.scr::-webkit-scrollbar-thumb,.dbsec::-webkit-scrollbar-thumb,.dbtab-content::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px}
+#splash *::-webkit-scrollbar,#s-mission *::-webkit-scrollbar{display:none}
 
 /* GUIDE TOUR */
 #guide-overlay{position:fixed;top:0;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;z-index:950;pointer-events:none}
@@ -255,7 +256,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:32px;heigh
 <div id="s-mission" style="display:none;position:fixed;top:0;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;z-index:998;overflow:hidden">
   <div id="mission-bg" style="position:absolute;inset:0;background-size:cover;background-position:center 15%"></div>
   <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.50) 0%,rgba(0,0,0,.80) 100%)"></div>
-  <div style="position:relative;z-index:2;height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch">
+  <div style="position:relative;z-index:2;height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none">
     <div style="min-height:100%;display:flex;flex-direction:column;padding:36px 26px 48px;max-width:520px;margin:0 auto">
 
       <!-- JP SECTION -->
