@@ -35,6 +35,7 @@ input:focus,select:focus{outline:none;border-color:var(--ok);background:#fff}
 #splash.gone{display:none}
 #simg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 15%}
 #splash-tap{position:relative;z-index:2;color:rgba(255,255,255,.7);font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:0 0 40px;font-family:var(--ffm)}
+#splash-ver{position:absolute;right:12px;bottom:10px;z-index:2;color:rgba(255,255,255,.45);font-size:10px;letter-spacing:1px;font-family:var(--ffm)}
 
 /* SCREENS */
 .scr{position:absolute;inset:0;display:none;flex-direction:column;overflow:hidden;background:var(--bg)}
@@ -250,6 +251,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:32px;heigh
 <div id="splash">
   <img id="simg" alt="">
   <div id="splash-tap">TAP TO ENTER</div>
+  <div id="splash-ver"></div>
 </div>
 
 <!-- MISSION PAGE -->
@@ -403,7 +405,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:32px;heigh
       <option value="generic">その他 Other（目安: 600 kg）</option>
     </select></div>
     <div class="fld"><label id="lhw">体重 (kg)</label><input type="number" id="hw" value="650" min="150" max="1200"></div>
-    <div class="fld"><label id="lha">年齢</label><input type="number" id="ha" value="8" min="1" max="30"></div>
+    <div class="fld"><label id="lha">年齢</label><input type="number" id="ha" value="8" min="0" max="40"></div>
     <div class="fld"><label id="lhtr">訓練度 / Training Level</label><select id="htr">
       <option value="green">未経験 / Green (×0.70)</option>
       <option value="worker" selected>作業馬 / Working (×1.00)</option>
@@ -549,6 +551,8 @@ function setLang(l){
 }
 
 // ── SPLASH ─────────────────────────────────────────────────────
+var APP_VERSION='1.1.0'; // リリース時に更新（ファイル名HorsePowerLAB_{ver}.htmlと一致させる）
+(()=>{const sv=document.getElementById('splash-ver');if(sv)sv.textContent='v'+APP_VERSION;})();
 document.getElementById('splash').addEventListener('click',()=>{
   const spl=document.getElementById('splash');
   const mis=document.getElementById('s-mission');
@@ -729,8 +733,11 @@ function closeHM(){document.getElementById('hmo').classList.remove('op');}
 function saveH(){
   // breed: 現在は体重初期値の衰引のみに使用。
   // 将来拡張予定：品種ごとの作業速度・歩幅・吸気消費の平均値など（実測データ蓄積待ち）
+  const wRaw=parseInt(document.getElementById('hw').value);
+  const aRaw=parseInt(document.getElementById('ha').value);
   const h={name:document.getElementById('hn').value||'Horse',breed:document.getElementById('hb').value,
-    weight:parseInt(document.getElementById('hw').value)||650,age:parseInt(document.getElementById('ha').value)||8,
+    weight:Number.isFinite(wRaw)?Math.min(Math.max(wRaw,150),1200):650,   // 負値・NaNを排除しUI範囲にクランプ
+    age:Number.isFinite(aRaw)?Math.min(Math.max(aRaw,0),40):8,            // 0歳（当歳）を有効値として保持
     train:document.getElementById('htr').value||'worker'};
   if(S.editH!==null){S.horses[S.editH]=h;}
   else{S.horses.push(h);S.selH=S.horses.length-1;}
@@ -745,8 +752,15 @@ function saveH(){
   }
 }
 function delH(i,e){e.stopPropagation();S.horses.splice(i,1);
-  if(S.selH>=S.horses.length)S.selH=S.horses.length-1;
-  if(!S.horses.length)S.selH=null;save();refreshHome();}
+  // selH再マッピング: 削除対象なら解除、後方なら1つ繰り上げ
+  if(S.selH===i)S.selH=null;
+  else if(S.selH!==null&&S.selH>i)S.selH--;
+  if(S.selH!==null&&S.selH>=S.horses.length)S.selH=S.horses.length?S.horses.length-1:null;
+  // 各計算機の馬割当も同様に再マッピング（splice後のindexずれで別の馬に化けるのを防止）
+  Object.keys(S.calcHorse).forEach(cid=>{
+    S.calcHorse[cid]=S.calcHorse[cid].map(idx=>idx===null||idx===undefined?null:(idx===i?null:(idx>i?idx-1:idx)));
+  });
+  save();refreshHome();}
 function selH(i){S.selH=(S.selH===i)?null:i;refreshHome();}
 function getBW(){return(S.selH!==null&&S.horses[S.selH])?S.horses[S.selH].weight:650;}
 // 訓練度係数（NRC 2007・Tillers Int'l実務データ）
@@ -769,7 +783,7 @@ function getHorseObj(calcId,pos){
 function getHorseCap(calcId,pos){
   const h=getHorseObj(calcId,pos||0);
   const tf=TRAIN_F[h?.train||'worker']||1.00;
-  const af=ageFactor(h?.age||8);
+  const af=ageFactor(h?.age??8);  // 0歳を保持（||だと8歳に化け若齢警告が消える）
   return tf*af;
 }
 function getCalcBW(calcId){
@@ -791,7 +805,8 @@ function getTeamStats(calcId, nh, bwInput){
   const cap0=getHorseCap(calcId,0);
   for(let i=0;i<nh;i++){
     const h=getHorseObj(calcId,i);
-    const bwi=h?h.weight:(bwInput||650); // 登録馬優先・未選択時はUI入力値を使用
+    let bwi=h?h.weight:bwInput; // 登録馬優先・未選択時はUI入力値を使用
+    bwi=(Number.isFinite(bwi)&&bwi>0)?bwi:650; // 負値・0・NaNは既定650kgへ（負の牽引力を防止）
     const capi=getHorseCap(calcId,i);
     totalBW+=bwi;
     teamPlo+=bwi*0.10*capi;
@@ -812,9 +827,9 @@ function getYoungHorseWarn(calcId, nh){
   for(let i=0;i<nh;i++){
     const h=getHorseObj(calcId,i);
     if(!h)continue; // 未登録馬は対象外
-    const age=h.age||8;
+    const age=h.age??8;  // 0歳（当歳）を保持
     if(minAge===null||age<minAge)minAge=age;
-    if(age<=3)youngNames.push(h.name||('Horse '+(i+1)));
+    if(age<=3)youngNames.push(esc(h.name)||('Horse '+(i+1)));
   }
   if(minAge===null||minAge>3)return ''; // 警告不要
   const nameStr=youngNames.join('・');
@@ -860,7 +875,7 @@ function buildHorseSelector(calcId,pos,calcFn,bwId){
       const dis=otherIds.includes(i)?' disabled':'';
       const sel=(i===curId)?' selected':'';
       const tl=h.train==='green'?(S.lang==='ja'?'未':'Grn'):h.train==='expert'?(S.lang==='ja'?'熟':'Exp'):(S.lang==='ja'?'作':'Wrk');
-      opts+=`<option value="${i}"${sel}${dis}>${h.name} · ${h.weight}kg · ${h.age}歳 · ${tl}</option>`;
+      opts+=`<option value="${i}"${sel}${dis}>${esc(h.name)} · ${h.weight}kg · ${h.age}歳 · ${tl}</option>`;
     });
   }
   const label=S.lang==='ja'?(labels[pos]||labels[0]):(labelsEn[pos]||labelsEn[0]);
@@ -926,7 +941,7 @@ function refreshHome(){
   const hl=document.getElementById('hlist');hl.innerHTML='';
   S.horses.forEach((h,i)=>{
     const d=document.createElement('div');d.className='hcard'+(S.selH===i?' sel':'');
-    d.innerHTML=`<div style="flex:1"><div class="hname">${h.name}</div><div class="hmeta">${BN[h.breed]||h.breed} · ${h.weight}kg · ${h.age}yr · ${h.train==="green"?("未経験"):h.train==="expert"?("熟練"):("作業馬")}</div></div><button class="hdel" onclick="delH(${i},event)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a1,1,0,0,1,1-1h4a1,1,0,0,1,1,1v2"/></svg></button>`;
+    d.innerHTML=`<div style="flex:1"><div class="hname">${esc(h.name)}</div><div class="hmeta">${BN[h.breed]||h.breed} · ${h.weight}kg · ${h.age}yr · ${h.train==="green"?("未経験"):h.train==="expert"?("熟練"):("作業馬")}</div></div><button class="hdel" onclick="delH(${i},event)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a1,1,0,0,1,1-1h4a1,1,0,0,1,1,1v2"/></svg></button>`;
     d.addEventListener('click',()=>selH(i));hl.appendChild(d);
   });
   const mg=document.getElementById('mgrid');mg.innerHTML='';
@@ -954,6 +969,7 @@ function refreshHome(){
 }
 
 // ── COMMON HELPERS ─────────────────────────────────────────────
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function v(id){const e=document.getElementById(id);return e?e.value:'';}
 function num(id,def){return parseFloat(v(id))||def;}
 function int_(id,def){return parseInt(v(id))||def;}
@@ -961,7 +977,7 @@ function int_(id,def){return parseInt(v(id))||def;}
 const DEM={light:1.40,med:1.60,heavy:1.80,vh:1.90};
 
 function ghg(kJ){const dL=kJ/(0.27*36000),co2=dL*2.65,trees=co2/22;return{dL,co2,trees};}
-function envCard(kJ, de_total_mcal, totalBW){
+function envCard(kJ, de_total_mcal, totalBW, nh){
   const g=ghg(kJ);
   // ⑤ 正味CO2: 飼料CO2を差し引き
   // NRC(2007): 1 Mcal DE ≈ 乾物0.5kg / Lal(2004): 干し草0.10 kg CO2/kg DM
@@ -969,7 +985,7 @@ function envCard(kJ, de_total_mcal, totalBW){
   const feed_co2 = de_val * 0.5 * 0.10;
   const net_co2 = g.co2 - feed_co2;
   // ③ 土壌圧縮: 馬の蹄圧
-  const bw_val = totalBW || 650;
+  const bw_val = (totalBW || 650)/Math.max(nh||1,1);  // 蹄圧は1頭あたり: チーム合計を頭数で割る
   const hoof_kPa = (bw_val * 9.81 / 2) / (200e-4) / 1000; // 2蹄接地, 200cm²
   const ja=S.lang!=='en';
   return `<div class="ec">
@@ -1092,8 +1108,8 @@ function updateHorseBadge(){
       if(bwEl&&bwEl.value)bwDisplay=parseInt(bwEl.value)||bwDisplay;
     }
   }
-  const label0=horses_disp[0]?`${horses_disp[0].name} ${horses_disp[0].weight}kg`:`${S.lang==='en'?'Horse':'馬'}\u3000${bwDisplay}kg`;
-  const rest=horses_disp.slice(1).filter(h=>h!==null).map(h=>` + ${h.name} ${h.weight}kg`).join('');
+  const label0=horses_disp[0]?`${esc(horses_disp[0].name)} ${horses_disp[0].weight}kg`:`${S.lang==='en'?'Horse':'馬'}\u3000${bwDisplay}kg`;
+  const rest=horses_disp.slice(1).filter(h=>h!==null).map(h=>` + ${esc(h.name)} ${h.weight}kg`).join('');
   badge.innerHTML=`<span style="font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px">${label0}${rest}</span>`;
 }
 function resizeP(){
@@ -1317,9 +1333,9 @@ function fc(){
   const implKey=v('f-impl')||'maburi';
   let dr,wcm;
   if(implKey==='maburi'){
-    // 日本犂: 実測ベース。幅20cmで50kgf/頭を基準に幅でスケール
+    // 日本犂: 実測ベース。幅20cmで50kgfを基準に幅でスケール（道具は常に1台）
     wcm=num('f-w',20);
-    dr=(50/20)*wcm*nh;
+    dr=(50/20)*wcm;
   } else if(implKey==='walking_plow'){
     // ウォーキングプラウ: kgf/cm係数 × インチ→cm変換幅
     const inchVal=parseInt(document.getElementById('f-w-inch')?.value||'10')||10;
@@ -1432,11 +1448,9 @@ function fc(){
     const f_tine=FTINE[sk3][spikePhase]||2.3;
     const mu=0.45; // 鉄爪対耕起済み土壌
     dr=f_tine*spikeN+spikeWt*mu;
-    wcm=Math.round(Math.sqrt(spikeN)*10); // 面積計算用近似（本数から幅推定）
-    const spikePresetEl=document.getElementById('f-spike-preset');
-    if(spikePresetEl&&spikePresetEl.value==='p1s')wcm=150;
-    else if(spikePresetEl&&spikePresetEl.value==='p2s')wcm=300;
-    else if(spikePresetEl&&spikePresetEl.value==='p3s')wcm=450;
+    // 幅推定: Pioneer実寸（35本=150cm, 70本=300cm, 105本=450cm）から線形則 幅=本数×30/7cm
+    // プリセット・カスタムとも同一式で算出（旧sqrt近似はプリセットと最大2.5倍乖離のため廃止）
+    wcm=Math.round(spikeN*30/7);
     const calcDiv3=document.getElementById('f-spike-calc');
     if(calcDiv3){
       const ja2=S.lang!=='en';
@@ -1455,13 +1469,13 @@ function fc(){
   const spEff=impl.sp*spRatio;  // mph
   const spkmh=spEff*1.60934;
   const wft_ft=wcm/30.48;  // cm→ft（面積計算用）
-  const ahr=(spEff*wft_ft*fe*nh)/8.25*40.4686;
+  const ahr=(spEff*wft_ft*fe)/8.25*40.4686;  // 道具1台: 頭数は負荷軽減にのみ寄与
   const aday=ahr*wh,days=area/Math.max(aday,0.001);
   const pct=dr/Math.max(pmd,0.001)*100;
   const pw=dr*9.81*(spEff*0.44704),wkJ=pw*wh*3.6;
   const de_maint=0.0333*ts.totalBW,de_total=0.0333*ts.totalBW*(DEM[impl.wt]||1.60),de_work=de_total-de_maint;
   // エネルギー警告
-  const eRatio=de_maint>0?de_work/de_maint:0;
+  const eRatio=de_maint>0?de_total/de_maint:0;  // NRC総DE需要/維持比（DEM相当）
   const eWarn=eRatio<1.0?(S.lang==='en'?'Light work. Normal forage is sufficient.':'軽作業。通常の飼料で十分です。')
     :eRatio<1.5?(S.lang==='en'?'Consider adding quality hay or grain.':'良質な干し草や穀物の追加を検討してください。')
     :eRatio<2.0?(S.lang==='en'?'Heavy work. Supplement grain/fat and ensure rest.':'高負荷作業です。穀物・油脂の補給と十分な休息を。')
@@ -1509,7 +1523,7 @@ ${fbMsg?`<span style="color:${tc[tr]};font-size:11px;font-family:var(--ffm)">${f
   const ja=S.lang!=='en';
   r.innerHTML=`
 <div class="rg">
-<div class="met"><div class="ml">${t('dr')}${nh>1&&(v('f-impl')||'maburi')==='maburi'?'<div style="font-size:10px;color:var(--text3)">'+(ja?'合計（×'+nh+'犂）':'total ('+nh+' plows)')+'</div>':''}</div><div class="mv">${dr.toFixed(0)}</div><div class="mu">kgf</div><div class="msub">${ja?'この農具・土壌条件で必要な力':'Force required by implement & soil'}</div></div>
+<div class="met"><div class="ml">${t('dr')}</div><div class="mv">${dr.toFixed(0)}</div><div class="mu">kgf</div><div class="msub">${ja?'この農具・土壌条件で必要な力':'Force required by implement & soil'}</div></div>
 <div class="met"><div class="ml">${t('tp')}<div style="font-size:10px;color:var(--text3)">${ja?'チーム合計':'team total'}</div></div><div class="mv">${plo.toFixed(0)}–${phi.toFixed(0)}</div><div class="mu">kgf</div><div class="msub">${ja?'体重・訓練度・年齢から算出した持続可能な力':'Sustained force from BW, training & age'}</div></div>
 <div class="met"><div class="ml">${t('spd')}</div><div class="mv">${spkmh.toFixed(1)}</div><div class="mu">km/h</div><div class="msub">${ja?'この農具の標準歩行ペース'+(spRatio<1.0?' (負荷により低下中)':''):'Standard pace for this implement'+(spRatio<1.0?' (reduced by load)':'')}</div></div>
 <div class="met"><div class="ml">${t('ahr')}</div><div class="mv">${ahr.toFixed(1)}</div><div class="mu">a/h</div><div class="msub">${ja?'速度・幅・圃場効率から算出':'From speed, width & field efficiency'}</div></div>
@@ -1566,7 +1580,7 @@ ${condSummary}
 <div style="margin-top:8px;padding:8px 10px;border-radius:var(--rs);background:${eWarnColor}15;border:1px solid ${eWarnColor}40;font-size:13px;color:${eWarnColor}">${eWarn}</div>
 </div>
 <div class="note mt6">ASAE D497.1 / Harrigan & Roosenberg (2002) Tillers International / NRC (2007)</div>`;
-  const e=document.getElementById('fe2');if(e)e.innerHTML=envCard(wkJ*days,de_total,ts.totalBW);
+  const e=document.getElementById('fe2');if(e)e.innerHTML=envCard(wkJ*days,de_total,ts.totalBW,nh);
   updateHorseBadge();
 }
 
@@ -1759,7 +1773,7 @@ function pc(){
     // 速度 m/min換算
     const spad_mn=mn_v*60;
     // 作業幅 = 道具幅（p-w）を使用
-    const ahr=(spad_mn*(mn_wcm/100)*op.fe*nh)/100;
+    const ahr=(spad_mn*(mn_wcm/100)*op.fe)/100;  // 道具1台: 頭数は負荷軽減にのみ寄与
     const aday=(ahr*wh)/(op.passes||1),days=area/Math.max(aday,0.001);
     // エネルギー（安定フェーズ出力ベース）
     const pw=drB_kgf*9.81*(spad_mn/60),wkJ=pw*wh*3.6*eFactor;
@@ -1788,7 +1802,7 @@ ${peakWarn?`<div class="dangerbox">${S.lang==='ja'?'⚠ 閉塞フェーズ牽引
     // 作業量メトリクス
     const metricsHtml=`<div class="rg"><div class="met"><div class="ml">${S.lang==='ja'?'安定牽引力':'Stable Draft'}</div><div class="mv">${drB_kgf.toFixed(0)}</div><div class="mu">kgf</div><div class="msub">${S.lang==='ja'?'泥が流れ始めてからの常用値':'Sustained value once mud flows'}</div></div><div class="met"><div class="ml">${t('ahr')}</div><div class="mv">${ahr.toFixed(1)}</div><div class="mu">a/h</div><div class="msub">${S.lang==='ja'?'速度・幅・圃場効率から算出':'From speed, width & field efficiency'}</div></div><div class="met"><div class="ml">${t('aday')}</div><div class="mv">${aday.toFixed(1)}</div><div class="mu">a/day</div><div class="msub">${S.lang==='ja'?'パス数込みの1日実作業量':'Daily output incl. passes'}</div></div><div class="met"><div class="ml">${t('dneed')}</div><div class="mv">${days.toFixed(1)}</div><div class="mu">日</div><div class="msub">${S.lang==='ja'?'馬の能力と条件から算出':'Based on horse capacity & conditions'}</div></div></div>`;
     // エネルギー警告
-    const eRatio_mn=de_maint>0?de_work/de_maint:0;
+    const eRatio_mn=de_maint>0?de_total/de_maint:0;
     const eWarn_mn=eRatio_mn<1.0?(S.lang==='en'?'Light work. Normal forage is sufficient.':'軽作業。通常の飼料で十分です。')
       :eRatio_mn<1.5?(S.lang==='en'?'Consider adding quality hay or grain.':'良質な干し草や穀物の追加を検討してください。')
       :eRatio_mn<2.0?(S.lang==='en'?'Heavy work. Supplement grain/fat and ensure rest.':'高負荷作業です。穀物・油脂の補給と十分な休息を。')
@@ -1807,7 +1821,7 @@ ${peakWarn?`<div class="dangerbox">${S.lang==='ja'?'⚠ 閉塞フェーズ牽引
 <div class="note mt6">${S.lang==='ja'?'泥中歩行消費：平地×'+eFactor.toFixed(1)+'倍（fmud='+fmud+'）/ NRC(2007)':'Mud walking ×'+eFactor.toFixed(1)+' of dry-ground baseline (f_mud='+fmud+') / NRC(2007)'}</div>
 </div>`;
     r.innerHTML=badgeHtml+metricsHtml+phaseHtml+eHtml;
-    const e=document.getElementById('pe2');if(e)e.innerHTML=envCard(wkJ*days,de_total,ts.totalBW);
+    const e=document.getElementById('pe2');if(e)e.innerHTML=envCard(wkJ*days,de_total,ts.totalBW,nh);
     updateHorseBadge();
     return;
   }
@@ -1864,10 +1878,8 @@ ${peakWarn?`<div class="dangerbox">${S.lang==='ja'?'⚠ 閉塞フェーズ牽引
     const D_B=D_press_B + D_asabe*1.0 + D_wave_B*1.0;       // 粘性
     const D_C=D_press_C + D_asabe*0.8 + D_wave_C*2.0;       // 液状化・最重
 
-    // 自己歩行抵抗（水田・回転式補正）
-    // 回転ディスクは泥を横に逃がしながら進むため馬鍬より抵抗小
-    // 実効f: 上限0.20（代かき時水深はくるぶし以下が通常）× 回転補正0.6
-    // 馬は道具の前を歩くため歩行抵抗は道具種類に無関係
+    // 自己歩行抵抗（泥中歩行）
+    // 馬は道具の前を歩くため歩行抵抗は道具種類に無関係（fmud選択値をそのまま適用）
     const R_self_rt=ts.totalBW*fmud_rt;      // kgf
 
     // 総牽引力（各フェーズ）
@@ -1895,7 +1907,7 @@ ${peakWarn?`<div class="dangerbox">${S.lang==='ja'?'⚠ 閉塞フェーズ牽引
     // 作業量（フェーズBを常用値とする）
     const spad_rt=Math.max(op.sp*(1-wd/100*op.wm*0.5)*0.8,20); // 代かき速度
     const wcm_rt=num('p-w',60);
-    const ahr_rt=(spad_rt*60*(wcm_rt/100)*op.fe*nh)/100;
+    const ahr_rt=(spad_rt*60*(wcm_rt/100)*op.fe)/100;  // 道具1台
     const aday_rt=(ahr_rt*wh)/(op.passes||1),days_rt=area/Math.max(aday_rt,0.001);
 
     // エネルギー（泥中歩行 fmud → 倍率、フェーズBベース）
@@ -1926,7 +1938,7 @@ ${pressWarn?`<div class="dangerbox" style="margin-top:8px">${S.lang==='ja'?'⚠ 
 
     const metricsHtml_rt=`<div class="rg"><div class="met"><div class="ml">${S.lang==='ja'?'最大牽引力（液状化）':'Peak Draft (fluid phase)'}</div><div class="mv">${Dtot_C.toFixed(0)}</div><div class="mu">kgf</div><div class="msub">${S.lang==='ja'?'液状化フェーズの最大値（設計基準）':'Max at fluid phase — used for design'}</div></div><div class="met"><div class="ml">${t('ahr')}</div><div class="mv">${ahr_rt.toFixed(1)}</div><div class="mu">a/h</div><div class="msub">${S.lang==='ja'?'速度・幅・圃場効率から算出':'From speed, width & field efficiency'}</div></div><div class="met"><div class="ml">${t('aday')}</div><div class="mv">${aday_rt.toFixed(1)}</div><div class="mu">a/day</div><div class="msub">${S.lang==='ja'?'パス数込みの1日実作業量':'Daily output incl. passes'}</div></div><div class="met"><div class="ml">${t('dneed')}</div><div class="mv">${days_rt.toFixed(1)}</div><div class="mu">日</div><div class="msub">${S.lang==='ja'?'馬の能力と条件から算出':'Based on horse capacity & conditions'}</div></div></div>`;
     // エネルギー警告
-    const eRatio_rt=de_maint_rt>0?de_work_rt/de_maint_rt:0;
+    const eRatio_rt=de_maint_rt>0?de_total_rt/de_maint_rt:0;
     const eWarn_rt=eRatio_rt<1.0?(S.lang==='en'?'Light work. Normal forage is sufficient.':'軽作業。通常の飼料で十分です。')
       :eRatio_rt<1.5?(S.lang==='en'?'Consider adding quality hay or grain.':'良質な干し草や穀物の追加を検討してください。')
       :eRatio_rt<2.0?(S.lang==='en'?'Heavy work. Supplement grain/fat and ensure rest.':'高負荷作業です。穀物・油脂の補給と十分な休息を。')
@@ -1944,7 +1956,7 @@ ${pressWarn?`<div class="dangerbox" style="margin-top:8px">${S.lang==='ja'?'⚠ 
 </div>`;
 
     r.innerHTML=badgeHtml_rt+metricsHtml_rt+phaseHtml_rt+eHtml_rt;
-    const e=document.getElementById('pe2');if(e)e.innerHTML=envCard(wkJ_rt*days_rt,de_total_rt,ts.totalBW);
+    const e=document.getElementById('pe2');if(e)e.innerHTML=envCard(wkJ_rt*days_rt,de_total_rt,ts.totalBW,nh);
     updateHorseBadge();
     return;
   }
@@ -2008,7 +2020,7 @@ ${pressWarn?`<div class="dangerbox" style="margin-top:8px">${S.lang==='ja'?'⚠ 
 
     // 作業量
     const spad_rk=Math.max(op.sp*(1-wd/100*op.wm*0.5),20);
-    const ahr_rk=(spad_rk*60*(rk_len)*op.fe*nh)/100; // 作業幅=角材長さ
+    const ahr_rk=(spad_rk*60*(rk_len)*op.fe)/100; // 作業幅=角材長さ・道具1台
     const aday_rk=(ahr_rk*wh)/(op.passes||1);
     const days_rk=area/Math.max(aday_rk,0.001);
 
@@ -2017,7 +2029,7 @@ ${pressWarn?`<div class="dangerbox" style="margin-top:8px">${S.lang==='ja'?'⚠ 
     const pw_rk=Dtot_A*9.81*(spad_rk/60);
     const wkJ_rk=pw_rk*wh*3.6*eFactor_rk;
     const de_maint_rk=0.0333*ts.totalBW;
-    const de_total_rk=0.0333*ts.totalBW*(DEM[op.wt]||1.20)*wef(wd)*eFactor_rk;
+    const de_total_rk=0.0333*ts.totalBW*(DEM[op.wt]||1.60)*wef(wd)*eFactor_rk;
     const de_work_rk=de_total_rk-de_maint_rk;
 
     // 結果表示
@@ -2032,7 +2044,7 @@ ${pressWarn?`<div class="dangerbox" style="margin-top:8px">${S.lang==='ja'?'⚠ 
 <div class="met"><div class="ml">${t('dneed')}</div><div class="mv">${days_rk.toFixed(1)}</div><div class="mu">日</div><div class="msub">${S.lang==='ja'?'馬の能力と条件から算出':'Based on horse capacity & conditions'}</div></div>
 </div>`;
     // エネルギー警告
-    const eRatio_rk=de_maint_rk>0?de_work_rk/de_maint_rk:0;
+    const eRatio_rk=de_maint_rk>0?de_total_rk/de_maint_rk:0;
     const eWarn_rk=eRatio_rk<1.0?(S.lang==='en'?'Light work. Normal forage is sufficient.':'軽作業。通常の飼料で十分です。')
       :eRatio_rk<1.5?(S.lang==='en'?'Consider adding quality hay or grain.':'良質な干し草や穀物の追加を検討してください。')
       :eRatio_rk<2.0?(S.lang==='en'?'Heavy work. Supplement grain/fat and ensure rest.':'高負荷作業です。穀物・油脂の補給と十分な休息を。')
@@ -2060,7 +2072,7 @@ ${pressWarn?`<div class="dangerbox" style="margin-top:8px">${S.lang==='ja'?'⚠ 
 </div>`;
 
     r.innerHTML=badge_rk+metrics_rk+phase_rk+e_rk;
-    const e=document.getElementById('pe2');if(e)e.innerHTML=envCard(wkJ_rk*days_rk,de_total_rk,ts.totalBW);
+    const e=document.getElementById('pe2');if(e)e.innerHTML=envCard(wkJ_rk*days_rk,de_total_rk,ts.totalBW,nh);
     updateHorseBadge();
     return;
   }
@@ -2079,14 +2091,14 @@ ${pressWarn?`<div class="dangerbox" style="margin-top:8px">${S.lang==='ja'?'⚠ 
   const spRatio_p=dr>0?Math.min(effPull/dr,1.0):1.0;
   const spad=Math.max(op.sp*tl.sp_f*(1-wd/100*op.wm*0.5),20)*spRatio_p;
   const fe_p=parseFloat(document.getElementById('p-fe')?.value||op.fe)||op.fe;
-  const ahr=(spad*60*(wcm/100)*fe_p*nh)/100,aday=(ahr*wh)/(op.passes||1),days=area/Math.max(aday,0.001);
+  const ahr=(spad*60*(wcm/100)*fe_p)/100,aday=(ahr*wh)/(op.passes||1),days=area/Math.max(aday,0.001);  // 道具1台
   const pct=dr/Math.max(effPull,0.001)*100;
   // 乾田エネルギー補正: ×1.2 (硬地歩行, HANDOVER記載)
   const dryEFactor=isDry?1.2:1.0;
   const pw=dr*9.81*(spad/60),wkJ=pw*wh*3.6*dryEFactor;
   const de_maint=0.0333*ts.totalBW,de_total=0.0333*ts.totalBW*(DEM[op.wt]||1.60)*wf*dryEFactor,de_work=de_total-de_maint;
   // エネルギー警告
-  const eRatio_p=de_maint>0?de_work/de_maint:0;
+  const eRatio_p=de_maint>0?de_total/de_maint:0;
   const eWarn_p=eRatio_p<1.0?(S.lang==='en'?'Light work. Normal forage is sufficient.':'軽作業。通常の飼料で十分です。')
     :eRatio_p<1.5?(S.lang==='en'?'Consider adding quality hay or grain.':'良質な干し草や穀物の追加を検討してください。')
     :eRatio_p<2.0?(S.lang==='en'?'Heavy work. Supplement grain/fat and ensure rest.':'高負荷作業です。穀物・油脂の補給と十分な休息を。')
@@ -2161,7 +2173,7 @@ ${isDry?'':`<div class="dr"><span>${t('wfactor')}<div style="font-size:11px;colo
 <div style="margin-top:8px;padding:8px 10px;border-radius:var(--rs);background:${eWarnColor_p}15;border:1px solid ${eWarnColor_p}40;font-size:13px;color:${eWarnColor_p}">${eWarn_p}</div>
 </div>
 <div class="note mt6">Hiraga & Sugano (2017) J. Equine Sci. PMC5383625 / NRC (2007)</div>`;
-  const e=document.getElementById('pe2');if(e)e.innerHTML=envCard(wkJ*days,de_total,ts.totalBW);
+  const e=document.getElementById('pe2');if(e)e.innerHTML=envCard(wkJ*days,de_total,ts.totalBW,nh);
   updateHorseBadge();
 }
 
@@ -2336,7 +2348,7 @@ function lc(){
     const mu_arch=tool.mu_arch,mu_g=tool.mu_g,r_tail=tool.r_tail;
     const F_arch=mu_arch*W_arch*cosr;
     const F_tail=mu_g*lw_load*r_tail*cosr;
-    const F_slope=(lw_load+W_arch)*slp/100;
+    const F_slope=(lw_load+W_arch)*sr;  // sinθ（slideWarnと同一の厳密勾配成分）
     FT=Math.max(F_arch+F_tail+F_slope,0);
     modelDesc=`${ja?'アーチ抵抗':'Arch drag'}: ${F_arch.toFixed(0)} kgf ／ ${ja?'後端引きずり':'Log tail drag'}: ${F_tail.toFixed(0)} kgf ／ ${ja?'勾配':'Slope'}: ${F_slope.toFixed(0)} kgf`;
   } else if(tool.type==='sled'){
@@ -2345,20 +2357,20 @@ function lc(){
     if(tool.sled_type==='bachi'){
       // バチバチ: 全体乗せ μ×(W_sled+W_log) + 勾配
       const F_fric=mu*(W_sled+lw_load)*cosr;
-      const F_slope=(W_sled+lw_load)*slp/100;
+      const F_slope=(W_sled+lw_load)*sr;
       FT=Math.max(F_fric+F_slope,0);
       modelDesc=`${ja?'ランナー摩擦':'Runner friction'}: ${F_fric.toFixed(0)} kgf (μ=${mu}) ／ ${ja?'勾配':'Slope'}: ${F_slope.toFixed(0)} kgf`;
     } else {
       // ゴーデビル: 前端スレッド + 後端引きずり + 勾配
       const F_sled=mu*W_sled*cosr;
       const F_tail=tool.mu_g*lw_load*tool.r_tail*cosr;
-      const F_slope=(W_sled+lw_load)*slp/100;
+      const F_slope=(W_sled+lw_load)*sr;
       FT=Math.max(F_sled+F_tail+F_slope,0);
       modelDesc=`${ja?'橇抵抗':'Sled drag'}: ${F_sled.toFixed(0)} kgf ／ ${ja?'後端引きずり':'Log tail drag'}: ${F_tail.toFixed(0)} kgf ／ ${ja?'勾配':'Slope'}: ${F_slope.toFixed(0)} kgf`;
     }
   } else {
     // チェーン直引き（既存）
-    FT=Math.max(tool.mu*lw_load*cosr+lw_load*slp/100,0);
+    FT=Math.max(tool.mu*lw_load*cosr+lw_load*sr,0);
     modelDesc=`μ=${tool.mu} × ${lw_load.toFixed(0)} kgf`;
   }
 
@@ -2526,7 +2538,7 @@ ${condSummary}
 <div class="sec-lbl">${t('workq')}</div><div class="rc mt8">
 <div class="rg">
 <div class="met"><div class="ml">${ja?'馬力':'Horse Power'}</div><div class="mv">${pw_PS.toFixed(2)}</div><div class="mu">PS</div></div>
-<div class="met"><div class="ml">${ja?'仕事量（片道）':'Work (one way)'}</div><div class="mv">${wkJ_trip.toFixed(1)}</div><div class="mu">kJ/本</div></div>
+<div class="met"><div class="ml">${ja?'仕事量（片道）':'Work (one way)'}</div><div class="mv">${wkJ_trip.toFixed(1)}</div><div class="mu">${ja?'kJ/回':'kJ/trip'}</div></div>
 <div class="met"><div class="ml">${ja?'仕事率':'Power'}</div><div class="mv">${(pw_kW*1000).toFixed(0)}</div><div class="mu">W</div></div>
 </div>
 <div style="font-size:11px;color:var(--text3);margin-top:6px">▲ ${ja?'並足（常歩）= 1.0 m/s が林内標準（Perez et al. 1992）':'Walk = 1.0 m/s is forest standard (Perez et al. 1992)'}</div>
@@ -2534,11 +2546,11 @@ ${condSummary}
 <div class="note mt6">Harrigan et al. (2002) Tillers Int'l Table3実測 / ASAE D497.1 / Bryant (1913) Logging / 馬事文化財団「働く馬」図録（2001）</div>`;
   updateHorseBadge();
   // 環境レポート
-  const wkJ_day_le=wkJ_trip*2*Math.max(1,Math.floor(60*6/Math.max(cyc,1)))*nl;
-  const de_maint_le=0.03*Math.pow(ts.totalBW,0.75);
-  const de_work_le=wkJ_day_le/4187*0.239/0.65;
+  const wkJ_day_le=wkJ_trip*2*Math.max(1,Math.floor(60*6/Math.max(cyc,1)));  // FTに積載本数nlは織込済み（×nl重複を除去）。往路仕事×2で復路を概算（過大側・要検討）
+  const de_maint_le=0.0333*ts.totalBW;  // NRC(2007) DE維持要求量: CALC1/2と統一
+  const de_work_le=wkJ_day_le/4184/0.65;  // kJ→Mcal(÷4184)を1回のみ適用・効率0.65
   const de_total_le=de_maint_le+de_work_le;
-  const e_le=document.getElementById('le2');if(e_le)e_le.innerHTML=envCard(wkJ_day_le,de_total_le,ts.totalBW);
+  const e_le=document.getElementById('le2');if(e_le)e_le.innerHTML=envCard(wkJ_day_le,de_total_le,ts.totalBW,nh);
 }
 // ═══════════════════════════════════════════════════════════════
 const GRD={
@@ -2568,8 +2580,8 @@ ${buildHorseSelector('g',0,'gc','g-bw')}
 <div class="sec-lbl">${t('logset')}</div><div class="ic">
 <div class="fld"><label>${t('sp')}</label><select id="g-sp" onchange="gdAutoWt()" oninput="gdAutoWt()">${spOpts}</select></div>
 <div class="fld"><label>${t('ll')}</label><input type="number" id="g-len" value="3" min="0.5" max="20" step="0.1" onchange="gdAutoWt()" oninput="gdAutoWt()"></div>
-<div class="fld"><label>${t('ds')} — 末口（先端）</label><input type="number" id="g-ds" value="30" min="5" max="120" onchange="gdAutoWt()" oninput="gdAutoWt()"></div>
-<div class="fld"><label>${t('dl')} — 元口（根元）</label><input type="number" id="g-dl" value="35" min="5" max="150" onchange="gdAutoWt()" oninput="gdAutoWt()"></div>
+<div class="fld"><label>${t('ds')} — ${S.lang==='ja'?'末口（先端）':'small end (top)'}</label><input type="number" id="g-ds" value="30" min="5" max="120" onchange="gdAutoWt()" oninput="gdAutoWt()"></div>
+<div class="fld"><label>${t('dl')} — ${S.lang==='ja'?'元口（根元）':'butt end (base)'}</label><input type="number" id="g-dl" value="35" min="5" max="150" onchange="gdAutoWt()" oninput="gdAutoWt()"></div>
 <div class="fld"><label>丸太重量 / Log weight (kg) <span style="color:var(--text3);font-size:13px" id="g-wt-lbl">${S.lang==='ja'?'自動計算':'auto'}</span> <button type="button" id="g-wt-reset" onclick="gdResetWt()" style="display:none;font-size:11px;padding:1px 6px;border-radius:4px;border:1px solid var(--border2);background:var(--bg2);color:var(--text2);cursor:pointer;margin-left:4px">${S.lang==='ja'?'リセット':'reset'}</button></label><input type="number" id="g-wt" value="174" min="10" max="5000" onchange="this.dataset.manual='1';gdShowReset(true);gc()" oninput="this.dataset.manual='1';gdShowReset(true);gc()"></div>
 </div>
 <div class="sec-lbl">${t('gndset')}</div><div class="ic">
@@ -2734,21 +2746,21 @@ function gc(){
   }
 
   let warn='';
-  if(pb>110&&pp<=110)warn=`<div class="warnbox mt8">素引きは過負荷ですが、鉄板を使えば安全な範囲内に収まります。この条件では鉄板の使用が有効です。</div>`;
-  else if(pb>110&&pp>110)warn=`<div class="dangerbox mt8">両方とも過負荷です。丸太重量を減らすか、頭数を増やしてください。</div>`;
-  if(slp<=-20)warn+=`<div class="warnbox mt6">急下り搬出: 丸太が馬に追いつく危険があります。制動チェーン・抑木を必ず使用。</div>`;
+  if(pb>110&&pp<=110)warn=`<div class="warnbox mt8">${S.lang==='ja'?'素引きは過負荷ですが、鉄板を使えば安全な範囲内に収まります。この条件では鉄板の使用が有効です。':'Bare skidding is overloaded, but a ground plate brings it within a safe range. Using the plate is effective here.'}</div>`;
+  else if(pb>110&&pp>110)warn=`<div class="dangerbox mt8">${S.lang==='ja'?'両方とも過負荷です。丸太重量を減らすか、頭数を増やしてください。':'Overloaded in both cases. Reduce log weight or add horses.'}</div>`;
+  if(slp<=-20)warn+=`<div class="warnbox mt6">${S.lang==='ja'?'急下り搬出: 丸太が馬に追いつく危険があります。制動チェーン・抑木を必ず使用。':'Steep downhill: the log may overtake the horse. Always use a braking chain or snubbing device.'}</div>`;
   warn+=getYoungHorseWarn('g',nh);
 
   const r=document.getElementById('gr2');if(!r)return;
   r.innerHTML=`
-<div class="sec-lbl">丸太データ</div><div class="rc">
-<div class="dr"><span>体積 (スマリアン公式)</span><span class="dv">${vol.toFixed(3)} m³</span></div>
-<div class="dr"><span>重量（生木）</span><span class="dv">${wt.toFixed(0)} kg</span></div>
+<div class="sec-lbl">${S.lang==='ja'?'丸太データ':'Log Data'}</div><div class="rc">
+<div class="dr"><span>${S.lang==='ja'?'体積 (スマリアン公式)':'Volume (Smalian)'}</span><span class="dv">${vol.toFixed(3)} m³</span></div>
+<div class="dr"><span>${S.lang==='ja'?'重量（生木）':'Weight (green)'}</span><span class="dv">${wt.toFixed(0)} kg</span></div>
 </div>
 <div class="cmp-grid mt8">
 <div class="cmpA">
 <div class="cmpN" style="color:var(--danger)">${t('poff')}</div>
-<div style="font-size:12px;color:rgba(0,0,0,.5);margin-bottom:6px">バット部が土を削る</div>
+<div style="font-size:12px;color:rgba(0,0,0,.5);margin-bottom:6px">${S.lang==='ja'?'バット部が土を削る':'Butt end gouges the ground'}</div>
 <div class="cmpV" style="color:var(--danger)">${db.toFixed(0)}</div>
 <div class="cmpU">kgf</div>
 <div class="cmpM">μ = ${g.mb.toFixed(2)}</div>
@@ -2764,7 +2776,7 @@ ${vv(pp)}
 </div>
 </div>
 <div class="sec-lbl">${t('red')}</div><div class="rc mt8">
-<div style="font-size:22px;font-weight:700;text-align:center;color:var(--ok);padding:8px 0">−${red.toFixed(0)}% 削減</div>
+<div style="font-size:22px;font-weight:700;text-align:center;color:var(--ok);padding:8px 0">−${red.toFixed(0)}% ${S.lang==='ja'?'削減':'reduction'}</div>
 <div class="dr"><span>${t('tp')}</span><span class="dv">${plo.toFixed(0)}–${phi.toFixed(0)} kgf</span></div>
 <div class="dr"><span>${S.lang==='ja'?'地面の総合摩擦係数（素引き）':'Ground friction coeff. (bare)'}</span><span class="dv">μ = ${g.mb.toFixed(2)}</span></div>
 <div class="dr"><span>${S.lang==='ja'?'地面の総合摩擦係数（鉄板あり）':'Ground friction coeff. (plate)'}</span><span class="dv">μ = ${g.mp.toFixed(2)}</span></div>
